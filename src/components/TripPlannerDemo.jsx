@@ -192,10 +192,10 @@ function TripPlannerDemo() {
       // Draw route line
       if (latLngs.length > 1) {
         polylineRef.current = L.polyline(latLngs, {
-          color: '#d4af37',
-          weight: 3,
-          opacity: 0.7,
-          dashArray: '10, 10',
+          color: '#1a365d',
+          weight: 4,
+          opacity: 1,
+          dashArray: '8, 8',
         }).addTo(mapInstanceRef.current);
 
         // Fit map to show all markers (only if no specific event was selected)
