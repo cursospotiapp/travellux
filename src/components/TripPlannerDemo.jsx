@@ -237,6 +237,29 @@ function TripPlannerDemo() {
   return (
     <div className="trip-planner-demo">
       <header data-aos="fade-down">
+        <button
+          className="btn-back-home"
+          onClick={() => {
+            sessionStorage.removeItem('travelPreferences');
+            window.showLanding();
+          }}
+          title="Volver al inicio"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          Planificar otro viaje
+        </button>
         <h1>Tu Viaje a {tripData.tripSummary.destination}</h1>
         <p>
           Madrid → {tripData.tripSummary.destination} |{' '}

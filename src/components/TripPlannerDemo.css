@@ -47,6 +47,39 @@
   padding: 4rem 2rem;
   text-align: center;
   box-shadow: 0 4px 20px var(--shadow-lg);
+  position: relative;
+}
+
+.trip-planner-demo .btn-back-home {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  color: var(--white);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trip-planner-demo .btn-back-home svg {
+  width: 20px;
+  height: 20px;
+}
+
+.trip-planner-demo .btn-back-home:hover {
+  background: var(--accent);
+  color: var(--primary);
+  border-color: var(--accent);
+  transform: translateX(-4px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
 }
 
 .trip-planner-demo header h1 {
@@ -729,6 +762,13 @@
 @media (max-width: 768px) {
   .trip-planner-demo header h1 {
     font-size: 2.5rem;
+  }
+
+  .trip-planner-demo .btn-back-home {
+    position: static;
+    margin: 0 auto 1.5rem;
+    font-size: 0.85rem;
+    padding: 0.6rem 1.2rem;
   }
 
   .trip-planner-demo .section-title {
