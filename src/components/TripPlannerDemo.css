@@ -1,0 +1,684 @@
+/* TripPlannerDemo - Pixel Perfect CSS basado en index_trip_planner.html */
+
+/* CSS Variables - Idénticas al HTML original */
+:root {
+  --primary: #1a365d;
+  --primary-light: #2d4a7c;
+  --accent: #d4af37;
+  --accent-light: #f0d98d;
+  --text-dark: #1a202c;
+  --text-light: #4a5568;
+  --bg-light: #f7fafc;
+  --white: #ffffff;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --shadow-lg: rgba(0, 0, 0, 0.15);
+}
+
+/* Reset base */
+.trip-planner-demo * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.trip-planner-demo {
+  font-family: 'Inter', sans-serif;
+  color: var(--text-dark);
+  line-height: 1.6;
+  background-color: var(--bg-light);
+}
+
+.trip-planner-demo h1,
+.trip-planner-demo h2,
+.trip-planner-demo h3,
+.trip-planner-demo h4 {
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+}
+
+/* Header - Pixel Perfect */
+.trip-planner-demo header {
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-light) 100%
+  );
+  color: var(--white);
+  padding: 4rem 2rem;
+  text-align: center;
+  box-shadow: 0 4px 20px var(--shadow-lg);
+}
+
+.trip-planner-demo header h1 {
+  font-size: 3.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.trip-planner-demo header p {
+  font-size: 1.25rem;
+  opacity: 0.95;
+  font-weight: 300;
+}
+
+/* Container */
+.trip-planner-demo .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+/* Section Titles */
+.trip-planner-demo .section-title {
+  font-size: 2.5rem;
+  color: var(--primary);
+  margin-bottom: 1rem;
+  text-align: center;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.trip-planner-demo .section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+
+.trip-planner-demo .section-subtitle {
+  text-align: center;
+  color: var(--text-light);
+  margin-bottom: 3rem;
+  font-size: 1.1rem;
+}
+
+/* Button Primary */
+.trip-planner-demo .btn-primary {
+  display: inline-block;
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-light) 100%
+  );
+  color: var(--white);
+  text-decoration: none;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.trip-planner-demo .btn-primary:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 20px var(--shadow-lg);
+}
+
+/* Hotel Cards - Pixel Perfect Grid */
+.trip-planner-demo .hotels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  margin-bottom: 4rem;
+}
+
+.trip-planner-demo .hotel-card {
+  background: var(--white);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px var(--shadow);
+  transition: all 0.3s ease;
+}
+
+.trip-planner-demo .hotel-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px var(--shadow-lg);
+}
+
+.trip-planner-demo .hotel-image {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+}
+
+.trip-planner-demo .hotel-content {
+  padding: 2rem;
+}
+
+.trip-planner-demo .hotel-header {
+  margin-bottom: 1rem;
+}
+
+.trip-planner-demo .hotel-name {
+  font-size: 1.5rem;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.trip-planner-demo .hotel-stars {
+  color: var(--accent);
+  font-size: 1.2rem;
+}
+
+.trip-planner-demo .hotel-location {
+  color: var(--text-light);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trip-planner-demo .hotel-location svg {
+  width: 16px;
+  height: 16px;
+}
+
+.trip-planner-demo .hotel-amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.trip-planner-demo .amenity-tag {
+  background: var(--bg-light);
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.trip-planner-demo .hotel-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--bg-light);
+}
+
+.trip-planner-demo .price-amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.trip-planner-demo .price-label {
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+/* Itinerary - Pixel Perfect */
+.trip-planner-demo .itinerary-day {
+  margin-bottom: 4rem;
+}
+
+.trip-planner-demo .day-header {
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-light) 100%
+  );
+  color: var(--white);
+  padding: 2rem;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.trip-planner-demo .day-title {
+  font-size: 2rem;
+}
+
+.trip-planner-demo .btn-map {
+  background: var(--accent);
+  color: var(--primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.trip-planner-demo .btn-map:hover {
+  background: var(--accent-light);
+  transform: scale(1.05);
+}
+
+.trip-planner-demo .btn-map svg {
+  width: 20px;
+  height: 20px;
+}
+
+.trip-planner-demo .day-content {
+  background: var(--white);
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 4px 20px var(--shadow);
+}
+
+/* Event Card - PIXEL PERFECT con Carrusel */
+.trip-planner-demo .event-card {
+  padding: 0;
+  border-bottom: 1px solid var(--bg-light);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.trip-planner-demo .event-card:last-child {
+  border-bottom: none;
+}
+
+.trip-planner-demo .event-card:hover {
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--bg-light),
+    transparent
+  );
+}
+
+.trip-planner-demo .event-content-wrapper {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 0;
+}
+
+/* Carrusel de imágenes - Swiper */
+.trip-planner-demo .event-carousel {
+  position: relative;
+  height: 100%;
+  min-height: 320px;
+  background: var(--bg-light);
+}
+
+.trip-planner-demo .event-carousel .swiper {
+  width: 100%;
+  height: 100%;
+}
+
+.trip-planner-demo .event-carousel .swiper-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-light);
+}
+
+.trip-planner-demo .event-carousel .swiper-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.trip-planner-demo .event-carousel .swiper-button-next,
+.trip-planner-demo .event-carousel .swiper-button-prev {
+  color: var(--white);
+  background: rgba(26, 54, 93, 0.7);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  backdrop-filter: blur(4px);
+}
+
+.trip-planner-demo .event-carousel .swiper-button-next:after,
+.trip-planner-demo .event-carousel .swiper-button-prev:after {
+  font-size: 16px;
+}
+
+.trip-planner-demo .event-carousel .swiper-pagination-bullet {
+  background: var(--white);
+  opacity: 0.5;
+}
+
+.trip-planner-demo .event-carousel .swiper-pagination-bullet-active {
+  background: var(--accent);
+  opacity: 1;
+}
+
+/* Contenido del evento */
+.trip-planner-demo .event-info {
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.trip-planner-demo .event-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.trip-planner-demo .event-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(
+    135deg,
+    var(--accent-light) 0%,
+    var(--accent) 100%
+  );
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+  position: relative;
+}
+
+.trip-planner-demo .event-icon-clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.trip-planner-demo .event-icon-clickable:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
+  background: linear-gradient(
+    135deg,
+    var(--accent) 0%,
+    var(--accent-light) 100%
+  );
+}
+
+.trip-planner-demo .event-number {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  font-family: 'Playfair Display', serif;
+}
+
+.trip-planner-demo .event-icon svg {
+  width: 28px;
+  height: 28px;
+  color: var(--primary);
+}
+
+.trip-planner-demo .event-title-group {
+  flex: 1;
+}
+
+.trip-planner-demo .event-time-badge {
+  display: inline-block;
+  background: var(--primary);
+  color: var(--white);
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.trip-planner-demo .event-title {
+  font-size: 1.75rem;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.trip-planner-demo .event-description {
+  color: var(--text-light);
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  font-size: 1.05rem;
+}
+
+/* Tips/Consejos */
+.trip-planner-demo .event-tip {
+  background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%);
+  border-left: 4px solid var(--accent);
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.trip-planner-demo .event-tip svg {
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.trip-planner-demo .event-tip-content {
+  flex: 1;
+}
+
+.trip-planner-demo .event-tip-title {
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+}
+
+.trip-planner-demo .event-tip-text {
+  color: var(--text-dark);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Detalles del evento */
+.trip-planner-demo .event-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.trip-planner-demo .event-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-light);
+  font-size: 0.95rem;
+}
+
+.trip-planner-demo .event-detail-item svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+}
+
+.trip-planner-demo .event-detail-item strong {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Map Modal - Pixel Perfect */
+.trip-planner-demo .map-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.trip-planner-demo .map-modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trip-planner-demo .map-container {
+  width: 90%;
+  height: 90%;
+  background: var(--white);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.trip-planner-demo .map-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--white);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px var(--shadow);
+  transition: all 0.3s ease;
+}
+
+.trip-planner-demo .map-close:hover {
+  background: var(--accent);
+  transform: scale(1.1);
+}
+
+.trip-planner-demo #map {
+  width: 100%;
+  height: 100%;
+}
+
+/* Custom Leaflet Marker */
+.custom-marker {
+  background: var(--accent);
+  color: var(--primary);
+  border: 3px solid var(--primary);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Loading State */
+.trip-planner-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1.5rem;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid var(--bg-light);
+  border-top: 4px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.trip-planner-loading p {
+  font-size: 1.2rem;
+  color: var(--text-light);
+}
+
+/* Error State */
+.trip-planner-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.trip-planner-error h2 {
+  color: var(--primary);
+}
+
+.trip-planner-error button {
+  padding: 0.75rem 1.5rem;
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.trip-planner-error button:hover {
+  background: var(--primary-light);
+  transform: scale(1.05);
+}
+
+/* Responsive - Pixel Perfect */
+@media (max-width: 968px) {
+  .trip-planner-demo .event-content-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .trip-planner-demo .event-carousel {
+    min-height: 280px;
+  }
+
+  .trip-planner-demo .event-info {
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .trip-planner-demo header h1 {
+    font-size: 2.5rem;
+  }
+
+  .trip-planner-demo .section-title {
+    font-size: 2rem;
+  }
+
+  .trip-planner-demo .hotels-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trip-planner-demo .day-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .trip-planner-demo .event-header {
+    flex-direction: column;
+  }
+
+  .trip-planner-demo .event-details {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}

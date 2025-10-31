@@ -1,0 +1,442 @@
+{
+  "destinations": {
+    "paris": {
+      "balanced": {
+        "day1": {
+          "title": "París Clásico",
+          "theme": "Iconos imprescindibles de la ciudad",
+          "events": [
+            {
+              "id": "day1-event1",
+              "time": "09:00 - 11:30",
+              "duration": "2h 30min",
+              "title": "Torre Eiffel",
+              "description": "Comienza tu aventura parisina en el icono más emblemático de la ciudad. Sube hasta la cima para disfrutar de vistas panorámicas incomparables de París. La luz de la mañana ofrece las mejores condiciones para fotografía.",
+              "type": "attraction",
+              "location": {
+                "name": "Torre Eiffel",
+                "address": "Champ de Mars, 5 Avenue Anatole France",
+                "coordinates": {
+                  "lat": 48.8584,
+                  "lng": 2.2945
+                }
+              },
+              "images": [
+                "https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1549144511-f099e773c147?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=600&fit=crop"
+              ],
+              "price": {
+                "amount": 26,
+                "currency": "EUR",
+                "description": "cima"
+              },
+              "tip": {
+                "title": "Consejo Pro",
+                "content": "Reserva tu entrada online con antelación para evitar las largas colas. Los miércoles y domingos suelen ser los días más tranquilos. Si quieres fotos sin multitudes, ve justo cuando abren a las 9:00."
+              },
+              "nextTransport": {
+                "type": "walking",
+                "duration": "15 min",
+                "description": "caminando"
+              }
+            },
+            {
+              "id": "day1-event2",
+              "time": "12:00 - 13:30",
+              "duration": "1h 30min",
+              "title": "Almuerzo en Café de l'Homme",
+              "description": "Disfruta de un almuerzo con vistas espectaculares a la Torre Eiffel desde el Trocadero. Este elegante café ofrece cocina francesa contemporánea en un ambiente sofisticado con una de las mejores terrazas de París.",
+              "type": "restaurant",
+              "location": {
+                "name": "Café de l'Homme",
+                "address": "17 Place du Trocadéro",
+                "coordinates": {
+                  "lat": 48.862,
+                  "lng": 2.288
+                }
+              },
+              "images": [
+                "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=600&fit=crop"
+              ],
+              "price": {
+                "amount": 55,
+                "currency": "EUR",
+                "description": "45-65 por persona"
+              },
+              "tip": {
+                "title": "Reserva Esencial",
+                "content": "Este restaurante es muy popular. Reserva con al menos 2-3 días de antelación, especialmente para la terraza. Pide mesa junto a la ventana para las mejores vistas de la Torre Eiffel."
+              },
+              "nextTransport": {
+                "type": "metro",
+                "duration": "20 min",
+                "description": "en metro"
+              }
+            },
+            {
+              "id": "day1-event3",
+              "time": "14:00 - 17:30",
+              "duration": "3h 30min",
+              "title": "Museo del Louvre",
+              "description": "Explora el museo más visitado del mundo, hogar de la Mona Lisa, la Venus de Milo y miles de obras maestras. Recorre sus impresionantes galerías que abarcan desde antigüedades egipcias hasta pinturas renacentistas.",
+              "type": "museum",
+              "location": {
+                "name": "Museo del Louvre",
+                "address": "Rue de Rivoli",
+                "coordinates": {
+                  "lat": 48.8606,
+                  "lng": 2.3376
+                }
+              },
+              "images": [
+                "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1564399579883-451a5d44ec08?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1585159812596-fac104f2f069?w=800&h=600&fit=crop"
+              ],
+              "price": {
+                "amount": 17,
+                "currency": "EUR",
+                "description": "entrada"
+              },
+              "tip": {
+                "title": "Estrategia de Visita",
+                "content": "El museo es enorme. Enfócate en 2-3 secciones: Pinturas italianas (Mona Lisa), Antigüedades egipcias y Esculturas griegas. Descarga la app oficial del Louvre para no perderte. Entra por la puerta del Carrousel para evitar colas."
+              },
+              "nextTransport": {
+                "type": "walking",
+                "duration": "10 min",
+                "description": "caminando"
+              }
+            },
+            {
+              "id": "day1-event4",
+              "time": "18:00 - 19:30",
+              "duration": "1h 30min",
+              "title": "Crucero por el Sena al atardecer",
+              "description": "Relájate con un romántico crucero por el río Sena mientras el sol se pone sobre París. Admira los monumentos iluminados desde una perspectiva única: Notre-Dame, el Louvre, la Torre Eiffel y los históricos puentes de la ciudad.",
+              "type": "activity",
+              "location": {
+                "name": "Puerto del Sena",
+                "address": "Quai de la Bourdonnais",
+                "coordinates": {
+                  "lat": 48.8608,
+                  "lng": 2.3368
+                }
+              },
+              "images": [
+                "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1549144511-f099e773c147?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1550340499-a6c60fc8287c?w=800&h=600&fit=crop"
+              ],
+              "price": {
+                "amount": 15,
+                "currency": "EUR",
+                "description": "crucero"
+              },
+              "tip": {
+                "title": "Momento Perfecto",
+                "content": "El horario está pensado para que veas París al atardecer y luego iluminada. La Torre Eiffel brilla cada hora en punto durante 5 minutos. Lleva una chaqueta ligera, puede refrescar en el río."
+              },
+              "nextTransport": null
+            }
+          ]
+        },
+        "day2": {
+          "title": "Arte y Bohemia",
+          "theme": "El París artístico e impresionista",
+          "events": [
+            {
+              "id": "day2-event1",
+              "time": "09:30 - 12:00",
+              "duration": "2h 30min",
+              "title": "Montmartre y Sacré-Cœur",
+              "description": "Descubre el barrio bohemio de Montmartre, con sus encantadoras calles empedradas y la majestuosa Basílica del Sacré-Cœur. Pasea por la Place du Tertre donde los artistas pintan retratos y paisajes, manteniendo viva la tradición artística del barrio.",
+              "type": "neighborhood",
+              "location": {
+                "name": "Sacré-Cœur",
+                "address": "35 Rue du Chevalier de la Barre",
+                "coordinates": {
+                  "lat": 48.8867,
+                  "lng": 2.3431
+                }
+              },
+              "images": [
+                "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1550340499-a6c60fc8287c?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1549144511-f099e773c147?w=800&h=600&fit=crop"
+              ],
+              "price": {
+                "amount": 6,
+                "currency": "EUR",
+                "description": "Gratis (€6 cúpula)"
+              },
+              "tip": {
+                "title": "Ruta Recomendada",
+                "content": "Sube en funicular o por las escaleras. Visita primero la basílica (gratis), luego sube a la cúpula para vistas 360°. Baja por las calles laterales hasta Place du Tertre. No compres en los puestos turísticos, son muy caros."
+              },
+              "nextTransport": {
+                "type": "walking",
+                "duration": "5 min",
+                "description": "caminando"
+              }
+            },
+            {
+              "id": "day2-event2",
+              "time": "12:30 - 14:00",
+              "duration": "1h 30min",
+              "title": "Almuerzo en Le Consulat",
+              "description": "Disfruta de la auténtica cocina francesa en este histórico café-restaurante de Montmartre, frecuentado por artistas como Picasso y Monet. Su fachada verde y su ambiente bohemio te transportarán al París de principios del siglo XX.",
+              "type": "restaurant",
+              "location": {
+                "name": "Le Consulat",
+                "address": "18 Rue Norvins",
+                "coordinates": {
+                  "lat": 48.8865,
+                  "lng": 2.3405
+                }
+              },
+              "images": [
+                "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1551218808-94e220e084d2?w=800&h=600&fit=crop"
+              ],
+              "price": {
+                "amount": 37.5,
+                "currency": "EUR",
+                "description": "30-45 por persona"
+              },
+              "tip": {
+                "title": "Platos Imprescindibles",
+                "content": "Prueba el Boeuf Bourguignon o el Coq au Vin, platos tradicionales franceses. El croissant de almendras es famoso. Pide mesa en la terraza si hace buen tiempo, es muy fotogénica con la fachada verde de fondo."
+              },
+              "nextTransport": {
+                "type": "metro",
+                "duration": "25 min",
+                "description": "en metro"
+              }
+            },
+            {
+              "id": "day2-event3",
+              "time": "14:30 - 17:00",
+              "duration": "2h 30min",
+              "title": "Museo d'Orsay",
+              "description": "Sumérgete en la mayor colección de arte impresionista y postimpresionista del mundo. Admira obras maestras de Monet, Renoir, Van Gogh, Degas y Cézanne en este impresionante edificio que fue una antigua estación de tren.",
+              "type": "museum",
+              "location": {
+                "name": "Museo d'Orsay",
+                "address": "1 Rue de la Légion d'Honneur",
+                "coordinates": {
+                  "lat": 48.86,
+                  "lng": 2.3266
+                }
+              },
+              "images": [
+                "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1564399579883-451a5d44ec08?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1577720643272-265f4c6a5ace?w=800&h=600&fit=crop"
+              ],
+              "price": {
+                "amount": 16,
+                "currency": "EUR",
+                "description": "entrada"
+              },
+              "tip": {
+                "title": "Obras Imprescindibles",
+                "content": "No te pierdas: 'Almuerzos de remeros' de Renoir, 'La habitación' de Van Gogh, 'Nenúfares' de Monet, y las bailarinas de Degas. Sube a la planta superior primero cuando hay menos gente. El café de la terraza tiene vistas al Sena."
+              },
+              "nextTransport": {
+                "type": "walking",
+                "duration": "15 min",
+                "description": "caminando"
+              }
+            },
+            {
+              "id": "day2-event4",
+              "time": "19:00 - 22:00",
+              "duration": "3h",
+              "title": "Saint-Germain-des-Prés y Jazz",
+              "description": "Explora el elegante barrio de Saint-Germain-des-Prés, cuna del existencialismo y el jazz parisino. Cena en uno de sus cafés históricos y termina la noche en un auténtico club de jazz donde la música en vivo te transportará a la época dorada del París bohemio.",
+              "type": "nightlife",
+              "location": {
+                "name": "Saint-Germain-des-Prés",
+                "address": "Boulevard Saint-Germain",
+                "coordinates": {
+                  "lat": 48.854,
+                  "lng": 2.333
+                }
+              },
+              "images": [
+                "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1485872299829-c673f5194813?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=800&h=600&fit=crop"
+              ],
+              "price": {
+                "amount": 50,
+                "currency": "EUR",
+                "description": "40-60 cena + entrada"
+              },
+              "tip": {
+                "title": "Lugares Emblemáticos",
+                "content": "Cena en Café de Flore o Les Deux Magots (históricos). Para jazz auténtico: Le Caveau de la Huchette o Duc des Lombards. Llega temprano al club de jazz (21:00) para conseguir buena mesa. La entrada suele incluir una consumición."
+              },
+              "nextTransport": null
+            }
+          ]
+        },
+        "day3": {
+          "title": "Versalles y Despedida",
+          "theme": "Esplendor real y última tarde en París",
+          "events": [
+            {
+              "id": "day3-event1",
+              "time": "09:00 - 14:00",
+              "duration": "5h",
+              "title": "Palacio de Versalles",
+              "description": "Visita el espectacular Palacio de Versalles, símbolo del poder absoluto de Luis XIV. Recorre la deslumbrante Galería de los Espejos, los Apartamentos Reales y los magníficos jardines franceses con sus fuentes y esculturas. Una experiencia de opulencia real incomparable.",
+              "type": "palace",
+              "location": {
+                "name": "Palacio de Versalles",
+                "address": "Place d'Armes, Versalles",
+                "coordinates": {
+                  "lat": 48.8049,
+                  "lng": 2.1204
+                }
+              },
+              "images": [
+                "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&h=600&fit=crop"
+              ],
+              "price": {
+                "amount": 27,
+                "currency": "EUR",
+                "description": "20-27 palacio + jardines"
+              },
+              "tip": {
+                "title": "Planificación Esencial",
+                "content": "Toma el RER C desde París (45 min). Compra entrada con antelación online. Visita orden: Palacio → Galería de Espejos → Grand Trianon → Jardines. Los sábados de abril a octubre hay espectáculo de fuentes musicales. Lleva snacks, la comida dentro es cara."
+              },
+              "nextTransport": {
+                "type": "train",
+                "duration": "50 min",
+                "description": "tren de vuelta"
+              }
+            },
+            {
+              "id": "day3-event2",
+              "time": "15:00 - 18:00",
+              "duration": "3h",
+              "title": "Champs-Élysées y Arco del Triunfo",
+              "description": "Pasea por la avenida más famosa del mundo, los Campos Elíseos, repleta de tiendas de lujo, cafés y teatros. Termina en el majestuoso Arco del Triunfo, sube a su terraza para disfrutar de vistas panorámicas de las 12 avenidas que convergen en la Place de l'Étoile.",
+              "type": "landmark",
+              "location": {
+                "name": "Arco del Triunfo",
+                "address": "Place Charles de Gaulle",
+                "coordinates": {
+                  "lat": 48.8738,
+                  "lng": 2.295
+                }
+              },
+              "images": [
+                "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1549144511-f099e773c147?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1550340499-a6c60fc8287c?w=800&h=600&fit=crop"
+              ],
+              "price": {
+                "amount": 13,
+                "currency": "EUR",
+                "description": "subida al Arco"
+              },
+              "tip": {
+                "title": "Ruta Óptima",
+                "content": "Comienza en metro George V, camina hacia el Arco. Shopping: Louis Vuitton, Cartier, Sephora flagship. Toma café en Ladurée (los mejores macarons). Sube al Arco al atardecer para fotos épicas. No cruces la rotonda andando, usa el paso subterráneo."
+              },
+              "nextTransport": {
+                "type": "metro",
+                "duration": "15 min",
+                "description": "en metro"
+              }
+            },
+            {
+              "id": "day3-event3",
+              "time": "19:30 - 22:00",
+              "duration": "2h 30min",
+              "title": "Cena de despedida con vista Torre Eiffel",
+              "description": "Culmina tu viaje con una cena memorable en un restaurante con vistas a la Torre Eiffel iluminada. Disfruta de alta cocina francesa mientras contemplas el espectáculo de luces de la torre que brilla cada hora. El broche de oro perfecto para tu aventura parisina.",
+              "type": "restaurant",
+              "location": {
+                "name": "Restaurante con vistas",
+                "address": "Avenue de New York",
+                "coordinates": {
+                  "lat": 48.862,
+                  "lng": 2.288
+                }
+              },
+              "images": [
+                "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=800&h=600&fit=crop"
+              ],
+              "price": {
+                "amount": 90,
+                "currency": "EUR",
+                "description": "80-100 por persona"
+              },
+              "tip": {
+                "title": "Experiencia Inolvidable",
+                "content": "Reserva con ventana. Opciones: Girafe, Les Ombres, o Le Jules Verne (en la torre, muy caro). La torre brilla cada hora en punto. Pide menu degustación para probar varios platos. Viste elegante, son restaurantes formales."
+              },
+              "nextTransport": null
+            }
+          ]
+        }
+      },
+      "relaxed": {
+        "day1": {
+          "title": "Bienvenida Relajada a París",
+          "theme": "Descubre la ciudad a tu ritmo",
+          "events": [
+            {
+              "id": "relaxed-day1-event1",
+              "time": "10:00 - 12:00",
+              "duration": "2h",
+              "title": "Desayuno y paseo por Le Marais",
+              "description": "Comienza tu día sin prisas con un delicioso desayuno en una boulangerie tradicional del barrio Le Marais. Después, pasea por sus encantadoras calles medievales, descubriendo boutiques vintage, galerías de arte y patios ocultos.",
+              "type": "leisure",
+              "location": {
+                "name": "Le Marais",
+                "address": "Rue des Rosiers",
+                "coordinates": {
+                  "lat": 48.8566,
+                  "lng": 2.3617
+                }
+              },
+              "images": [
+                "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800&h=600&fit=crop",
+                "https://images.unsplash.com/photo-1551632436-cbf8dd35adfa?w=800&h=600&fit=crop"
+              ],
+              "price": {
+                "amount": 12,
+                "currency": "EUR",
+                "description": "desayuno"
+              },
+              "tip": {
+                "title": "Lugares Recomendados",
+                "content": "Desayuna en Breizh Café (crêpes) o L'As du Fallafel (brunch). El barrio judío (Rue des Rosiers) tiene las mejores panaderías. Visita Place des Vosges, la plaza más antigua y bonita de París. Sin prisas, simplemente disfruta el ambiente."
+              },
+              "nextTransport": {
+                "type": "walking",
+                "duration": "10 min",
+                "description": "caminando"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

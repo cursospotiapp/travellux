@@ -82,9 +82,10 @@ function LandingPage() {
     btn.innerHTML = '✨ Creando tu viaje perfecto...';
     btn.style.opacity = '0.8';
 
-    // Redirect to results page after short delay
+    // Trigger navigation to planner after short delay
     setTimeout(() => {
-      window.location.href = 'index.html';
+      sessionStorage.setItem('navigateToPlanner', 'true');
+      window.dispatchEvent(new Event('storage'));
     }, 1500);
   };
 

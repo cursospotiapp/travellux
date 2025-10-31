@@ -1,0 +1,207 @@
+{
+  "budget": {
+    "low": [
+      {
+        "id": "hotel-comfort-paris",
+        "name": "Hotel Comfort Paris",
+        "stars": 3,
+        "location": {
+          "area": "Barrio Latino",
+          "description": "cerca del metro",
+          "coordinates": {
+            "lat": 48.8499,
+            "lng": 2.3447
+          }
+        },
+        "image": "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=220&fit=crop",
+        "amenities": ["Desayuno incluido", "WiFi gratis", "Recepción 24h"],
+        "price": {
+          "amount": 89,
+          "currency": "EUR",
+          "period": "noche"
+        },
+        "bookingUrl": "https://www.booking.com/city/fr/paris.es.html"
+      },
+      {
+        "id": "hotel-republique",
+        "name": "Hôtel République",
+        "stars": 3,
+        "location": {
+          "area": "República",
+          "description": "zona céntrica",
+          "coordinates": {
+            "lat": 48.8676,
+            "lng": 2.3632
+          }
+        },
+        "image": "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&h=220&fit=crop",
+        "amenities": ["WiFi gratis", "Bar", "Parking"],
+        "price": {
+          "amount": 95,
+          "currency": "EUR",
+          "period": "noche"
+        },
+        "bookingUrl": "https://www.booking.com/city/fr/paris.es.html"
+      }
+    ],
+    "medium": [
+      {
+        "id": "le-marais-boutique",
+        "name": "Le Marais Boutique",
+        "stars": 4,
+        "location": {
+          "area": "Le Marais",
+          "description": "zona histórica",
+          "coordinates": {
+            "lat": 48.8566,
+            "lng": 2.3522
+          }
+        },
+        "image": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&h=220&fit=crop",
+        "amenities": ["Media pensión", "WiFi gratis", "Spa", "Bar"],
+        "price": {
+          "amount": 165,
+          "currency": "EUR",
+          "period": "noche"
+        },
+        "bookingUrl": "https://www.booking.com/city/fr/paris.es.html"
+      },
+      {
+        "id": "hotel-opera-chic",
+        "name": "Hôtel Opéra Chic",
+        "stars": 4,
+        "location": {
+          "area": "Ópera",
+          "description": "cerca de Galerías Lafayette",
+          "coordinates": {
+            "lat": 48.8719,
+            "lng": 2.3318
+          }
+        },
+        "image": "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400&h=220&fit=crop",
+        "amenities": ["Desayuno buffet", "WiFi Premium", "Gimnasio", "Terraza"],
+        "price": {
+          "amount": 175,
+          "currency": "EUR",
+          "period": "noche"
+        },
+        "bookingUrl": "https://www.booking.com/city/fr/paris.es.html"
+      }
+    ],
+    "high": [
+      {
+        "id": "grand-hotel-elysee",
+        "name": "Grand Hôtel Élysée",
+        "stars": 5,
+        "location": {
+          "area": "Champs-Élysées",
+          "description": "vistas Torre Eiffel",
+          "coordinates": {
+            "lat": 48.8698,
+            "lng": 2.3078
+          }
+        },
+        "image": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&h=220&fit=crop",
+        "amenities": [
+          "Pensión completa",
+          "WiFi Premium",
+          "Spa & Piscina",
+          "Parking",
+          "Restaurante Michelin"
+        ],
+        "price": {
+          "amount": 285,
+          "currency": "EUR",
+          "period": "noche"
+        },
+        "bookingUrl": "https://www.booking.com/city/fr/paris.es.html"
+      },
+      {
+        "id": "le-royal-monceau",
+        "name": "Le Royal Monceau",
+        "stars": 5,
+        "location": {
+          "area": "Arc de Triomphe",
+          "description": "lujo absoluto",
+          "coordinates": {
+            "lat": 48.8761,
+            "lng": 2.2997
+          }
+        },
+        "image": "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=400&h=220&fit=crop",
+        "amenities": [
+          "Todo incluido",
+          "WiFi Premium",
+          "Spa de lujo",
+          "Piscina cubierta",
+          "Conserje personal",
+          "Restaurante gourmet"
+        ],
+        "price": {
+          "amount": 320,
+          "currency": "EUR",
+          "period": "noche"
+        },
+        "bookingUrl": "https://www.booking.com/city/fr/paris.es.html"
+      }
+    ],
+    "luxury": [
+      {
+        "id": "ritz-paris",
+        "name": "Ritz Paris",
+        "stars": 5,
+        "location": {
+          "area": "Place Vendôme",
+          "description": "el hotel más lujoso de París",
+          "coordinates": {
+            "lat": 48.8681,
+            "lng": 2.3286
+          }
+        },
+        "image": "https://images.unsplash.com/photo-1596436889106-be35e843f974?w=400&h=220&fit=crop",
+        "amenities": [
+          "Suite de lujo",
+          "Mayordomo personal",
+          "Spa Chanel",
+          "Restaurante 2 estrellas Michelin",
+          "Bar Hemingway",
+          "Limusina privada"
+        ],
+        "price": {
+          "amount": 850,
+          "currency": "EUR",
+          "period": "noche"
+        },
+        "bookingUrl": "https://www.booking.com/city/fr/paris.es.html"
+      },
+      {
+        "id": "plaza-athenee",
+        "name": "Hôtel Plaza Athénée",
+        "stars": 5,
+        "location": {
+          "area": "Avenue Montaigne",
+          "description": "la cúspide del lujo parisino",
+          "coordinates": {
+            "lat": 48.8663,
+            "lng": 2.3047
+          }
+        },
+        "image": "https://images.unsplash.com/photo-1625244724120-1fd1d34d00f6?w=400&h=220&fit=crop",
+        "amenities": [
+          "Suite presidencial",
+          "Mayordomo 24/7",
+          "Spa Dior",
+          "Restaurante Alain Ducasse",
+          "Champagne bar",
+          "Transfer aeropuerto en Rolls-Royce"
+        ],
+        "price": {
+          "amount": 950,
+          "currency": "EUR",
+          "period": "noche"
+        },
+        "bookingUrl": "https://www.booking.com/city/fr/paris.es.html"
+      }
+    ]
+  }
+}
