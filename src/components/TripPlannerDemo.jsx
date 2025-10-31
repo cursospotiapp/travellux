@@ -155,14 +155,27 @@ function TripPlannerDemo() {
             }
           )
             .addTo(mapInstanceRef.current)
-            .bindPopup(`<strong>${event.title}</strong><br>${event.time}`);
+            .bindPopup(
+              `<div class="custom-popup">
+                <strong>${event.title}</strong>
+                <span class="popup-time">🕐 ${event.time}</span>
+                <span class="popup-duration">⏱️ ${event.duration}</span>
+              </div>`,
+              {
+                className: 'custom-leaflet-popup',
+                maxWidth: 300,
+              }
+            );
 
           // If this is the event to open, open its popup and center on it
           if (eventIndexToOpen !== null && index === eventIndexToOpen) {
             setTimeout(() => {
               marker.openPopup();
               mapInstanceRef.current.setView(
-                [event.location.coordinates.lat, event.location.coordinates.lng],
+                [
+                  event.location.coordinates.lat,
+                  event.location.coordinates.lng,
+                ],
                 15
               );
             }, 200);
@@ -384,12 +397,14 @@ function TripPlannerDemo() {
                         {/* Event Info */}
                         <div className="event-info">
                           <div className="event-header">
-                            <div 
-                              className="event-icon event-icon-clickable" 
+                            <div
+                              className="event-icon event-icon-clickable"
                               onClick={() => openMap(dayIndex, eventIndex)}
                               title="Ver en el mapa"
                             >
-                              <span className="event-number">{eventIndex + 1}</span>
+                              <span className="event-number">
+                                {eventIndex + 1}
+                              </span>
                             </div>
                             <div className="event-title-group">
                               <div className="event-time-badge">
