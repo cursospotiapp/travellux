@@ -269,31 +269,87 @@ class SmartPOIService {
   /**
    * K-means geographic clustering MEJORADO
    * Usa K-means++ para mejor inicialización
-   * Incluye métricas de calidad (silhouette score aproximado)
+   * Incluye validación de calidad y rebalanceo automático
    * @private
    */
   kMeansGeographic(pois, k) {
-    const maxIterations = 20; // Aumentado de 10 a 20 para mejor convergencia
+    const maxIterations = 30;
 
     console.log(
       `[SMART-POI] K-means clustering: ${pois.length} POIs into ${k} clusters`
     );
 
-    // Initialize centroids usando K-means++ (mejor distribución inicial)
-    let centroids = this.initializeCentroidsKMeansPlusPlus(pois, k);
+    // Intentar hasta 3 veces si la calidad es mala
+    let bestClusters = null;
+    let bestQuality = -Infinity;
 
-    console.log(
-      `[SMART-POI] Initial centroids separation: ${this.calculateAvgSeparation(
-        centroids
-      ).toFixed(2)}km`
-    );
+    for (let attempt = 0; attempt < 3; attempt++) {
+      let centroids = this.initializeCentroidsKMeansPlusPlus(pois, k);
 
-    let previousAssignments = [];
-    let converged = false;
+      if (attempt === 0) {
+        console.log(
+          `[SMART-POI] Initial centroids separation: ${this.calculateAvgSeparation(
+            centroids
+          ).toFixed(2)}km`
+        );
+      }
 
-    // K-means iterations con early stopping
-    for (let iter = 0; iter < maxIterations; iter++) {
-      const assignments = pois.map((poi) => {
+      let previousAssignments = [];
+      let converged = false;
+
+      for (let iter = 0; iter < maxIterations; iter++) {
+        const assignments = pois.map((poi) => {
+          let minDist = Infinity;
+          let closestIdx = 0;
+
+          centroids.forEach((centroid, idx) => {
+            const dist = this.geographicDistance(poi.coordinates, centroid);
+            if (dist < minDist) {
+              minDist = dist;
+              closestIdx = idx;
+            }
+          });
+
+          return closestIdx;
+        });
+
+        if (
+          previousAssignments.length > 0 &&
+          assignments.every((a, i) => a === previousAssignments[i])
+        ) {
+          if (attempt === 0) {
+            console.log(
+              `[SMART-POI] K-means converged at iteration ${iter + 1}`
+            );
+          }
+          converged = true;
+          break;
+        }
+
+        previousAssignments = [...assignments];
+
+        const newCentroids = [];
+        for (let i = 0; i < k; i++) {
+          const clusterPOIs = pois.filter((_, idx) => assignments[idx] === i);
+
+          if (clusterPOIs.length === 0) {
+            newCentroids.push(centroids[i]);
+          } else {
+            const avgLat =
+              clusterPOIs.reduce((sum, p) => sum + p.coordinates.lat, 0) /
+              clusterPOIs.length;
+            const avgLng =
+              clusterPOIs.reduce((sum, p) => sum + p.coordinates.lng, 0) /
+              clusterPOIs.length;
+            newCentroids.push({ lat: avgLat, lng: avgLng });
+          }
+        }
+
+        centroids = newCentroids;
+      }
+
+      const clusters = [];
+      const finalAssignments = pois.map((poi) => {
         let minDist = Infinity;
         let closestIdx = 0;
 
@@ -308,93 +364,419 @@ class SmartPOIService {
         return closestIdx;
       });
 
-      // Check convergence (si las asignaciones no cambian)
-      if (
-        previousAssignments.length > 0 &&
-        assignments.every((a, i) => a === previousAssignments[i])
-      ) {
-        console.log(`[SMART-POI] K-means converged at iteration ${iter + 1}`);
-        converged = true;
-        break;
-      }
-
-      previousAssignments = [...assignments];
-
-      // Recalculate centroids
-      const newCentroids = [];
       for (let i = 0; i < k; i++) {
-        const clusterPOIs = pois.filter((_, idx) => assignments[idx] === i);
+        const clusterPOIs = pois.filter(
+          (_, idx) => finalAssignments[idx] === i
+        );
 
-        if (clusterPOIs.length === 0) {
-          // Si un cluster está vacío, mantener el centroide anterior
-          newCentroids.push(centroids[i]);
-        } else {
-          const avgLat =
-            clusterPOIs.reduce((sum, p) => sum + p.coordinates.lat, 0) /
-            clusterPOIs.length;
-          const avgLng =
-            clusterPOIs.reduce((sum, p) => sum + p.coordinates.lng, 0) /
-            clusterPOIs.length;
-          newCentroids.push({ lat: avgLat, lng: avgLng });
+        if (clusterPOIs.length > 0) {
+          const distances = clusterPOIs.map((poi) =>
+            this.geographicDistance(poi.coordinates, centroids[i])
+          );
+          const avgDist =
+            distances.reduce((a, b) => a + b, 0) / distances.length;
+          const maxDist = Math.max(...distances);
+
+          clusters.push({
+            center: centroids[i],
+            pois: clusterPOIs,
+            stats: {
+              size: clusterPOIs.length,
+              avgDistanceToCenter: avgDist,
+              maxDistanceToCenter: maxDist,
+            },
+          });
         }
       }
 
-      centroids = newCentroids;
+      const quality = this.evaluateClusteringQuality(clusters);
+
+      if (attempt === 0 || quality > bestQuality) {
+        bestQuality = quality;
+        bestClusters = clusters;
+      }
+
+      if (quality > 0.7) break;
     }
 
-    if (!converged) {
+    // PASO 1: Eliminar POIs huérfanos primero
+    bestClusters = this.removeOrphanPOIs(bestClusters);
+
+    // PASO 2: Rebalancear clusters después de limpiar huérfanos
+    bestClusters = this.rebalanceClusters(bestClusters);
+
+    // Evaluar calidad DESPUÉS del rebalanceo
+    const finalQuality = this.evaluateClusteringQuality(bestClusters);
+
+    bestClusters.forEach((cluster, idx) => {
       console.log(
-        `[SMART-POI] K-means reached max iterations (${maxIterations})`
+        `[SMART-POI]   Cluster ${idx + 1}: ${
+          cluster.stats.size
+        } POIs, avg dist: ${cluster.stats.avgDistanceToCenter.toFixed(
+          2
+        )}km, max: ${cluster.stats.maxDistanceToCenter.toFixed(2)}km`
       );
+    });
+
+    console.log(`[SMART-POI] ✓ Clustering quality: ${finalQuality.toFixed(2)}`);
+
+    return bestClusters;
+  }
+
+  evaluateClusteringQuality(clusters) {
+    const sizes = clusters.map((c) => c.stats.size);
+    const avgSize = sizes.reduce((a, b) => a + b, 0) / sizes.length;
+    const sizeVariance =
+      sizes.reduce((sum, s) => sum + Math.pow(s - avgSize, 2), 0) /
+      sizes.length;
+    const balanceScore = 1 / (1 + sizeVariance / (avgSize * avgSize));
+
+    const avgCompactness =
+      clusters.reduce((sum, c) => sum + c.stats.avgDistanceToCenter, 0) /
+      clusters.length;
+    const compactnessScore = 1 / (1 + avgCompactness);
+
+    const separation = this.calculateAvgSeparation(
+      clusters.map((c) => c.center)
+    );
+    const separationScore = Math.min(1, separation / 3);
+
+    return balanceScore * 0.4 + compactnessScore * 0.3 + separationScore * 0.3;
+  }
+
+  rebalanceClusters(clusters) {
+    const avgSize =
+      clusters.reduce((sum, c) => sum + c.stats.size, 0) / clusters.length;
+    const minSize = Math.max(Math.floor(avgSize * 0.75), 4); // Al menos 75% del promedio o 4 POIs
+    const maxSize = Math.ceil(avgSize * 1.25); // Máximo 125% del promedio
+
+    console.log(
+      `[SMART-POI] Rebalancing clusters (target: ${Math.round(
+        avgSize
+      )} POIs, range: ${minSize}-${maxSize})`
+    );
+
+    const rebalanced = clusters.map((c) => ({ ...c, pois: [...c.pois] }));
+
+    // Hacer múltiples pasadas hasta que esté balanceado
+    let maxPasses = 5;
+    let passNum = 0;
+
+    while (passNum < maxPasses) {
+      passNum++;
+      let anyChanges = false;
+
+      // Identificar clusters pequeños y grandes
+      const tooSmall = rebalanced
+        .map((c, idx) => ({ idx, size: c.stats.size }))
+        .filter((c) => c.size < minSize)
+        .sort((a, b) => a.size - b.size); // Más pequeños primero
+
+      const tooBig = rebalanced
+        .map((c, idx) => ({ idx, size: c.stats.size }))
+        .filter((c) => c.size > maxSize)
+        .sort((a, b) => b.size - a.size); // Más grandes primero
+
+      if (tooSmall.length === 0 && tooBig.length === 0) break;
+
+      // PASO 1: Para cada cluster GRANDE, forzar redistribución a los más cercanos
+      tooBig.forEach(({ idx: bigIdx }) => {
+        const excess = rebalanced[bigIdx].stats.size - maxSize;
+        if (excess <= 0) return;
+
+        // Encontrar todos los otros clusters ordenados por distancia al centroide del grande
+        const nearbyСlusters = rebalanced
+          .map((c, idx) => ({
+            idx,
+            distance: this.geographicDistance(
+              c.center,
+              rebalanced[bigIdx].center
+            ),
+            size: c.stats.size,
+          }))
+          .filter((c) => c.idx !== bigIdx && c.size < maxSize)
+          .sort((a, b) => a.distance - b.distance);
+
+        // Para cada POI del cluster grande, encontrar el cluster más cercano
+        const poisByDistance = rebalanced[bigIdx].pois
+          .map((poi) => {
+            let closestCluster = null;
+            let minDist = Infinity;
+
+            nearbyСlusters.forEach(({ idx }) => {
+              const dist = this.geographicDistance(
+                poi.coordinates,
+                rebalanced[idx].center
+              );
+              if (dist < minDist) {
+                minDist = dist;
+                closestCluster = idx;
+              }
+            });
+
+            return { poi, targetCluster: closestCluster, distance: minDist };
+          })
+          .filter((p) => p.targetCluster !== null)
+          .sort((a, b) => a.distance - b.distance);
+
+        // Mover los POIs más cercanos a otros clusters
+        let moved = 0;
+        for (const { poi, targetCluster } of poisByDistance) {
+          if (moved >= excess) break;
+          if (rebalanced[targetCluster].pois.length >= maxSize) continue;
+
+          rebalanced[bigIdx].pois = rebalanced[bigIdx].pois.filter(
+            (p) => p !== poi
+          );
+          rebalanced[targetCluster].pois.push(poi);
+          moved++;
+          anyChanges = true;
+        }
+
+        if (moved > 0) {
+          console.log(
+            `[SMART-POI]   Pass ${passNum}: Moved ${moved} POIs from large cluster ${
+              bigIdx + 1
+            } (now ${rebalanced[bigIdx].pois.length})`
+          );
+        }
+      });
+
+      // PASO 2: Para cada cluster pequeño, robar de los más cercanos
+      tooSmall.forEach(({ idx: smallIdx }) => {
+        const needed = minSize - rebalanced[smallIdx].stats.size;
+        if (needed <= 0) return;
+
+        // Recolectar POIs candidatos de clusters grandes
+        const candidates = [];
+        tooBig.forEach(({ idx: bigIdx }) => {
+          if (rebalanced[bigIdx].pois.length <= minSize) return;
+
+          rebalanced[bigIdx].pois.forEach((poi) => {
+            const distToSmall = this.geographicDistance(
+              poi.coordinates,
+              rebalanced[smallIdx].center
+            );
+            const distToBig = this.geographicDistance(
+              poi.coordinates,
+              rebalanced[bigIdx].center
+            );
+
+            candidates.push({
+              poi,
+              fromCluster: bigIdx,
+              distance: distToSmall,
+              improvement: distToBig - distToSmall,
+            });
+          });
+        });
+
+        // Ordenar por distancia al cluster pequeño (más cercanos primero)
+        candidates.sort((a, b) => a.distance - b.distance);
+
+        // Mover los POIs más cercanos
+        let moved = 0;
+        for (const candidate of candidates) {
+          if (moved >= needed) break;
+          if (rebalanced[candidate.fromCluster].pois.length <= minSize)
+            continue;
+
+          // Mover el POI
+          rebalanced[candidate.fromCluster].pois = rebalanced[
+            candidate.fromCluster
+          ].pois.filter((p) => p !== candidate.poi);
+          rebalanced[smallIdx].pois.push(candidate.poi);
+          moved++;
+          anyChanges = true;
+        }
+
+        if (moved > 0) {
+          console.log(
+            `[SMART-POI]   Pass ${passNum}: Moved ${moved} POIs to cluster ${
+              smallIdx + 1
+            } (now ${rebalanced[smallIdx].pois.length})`
+          );
+        }
+      });
+
+      if (!anyChanges) break;
+
+      // Recalcular estadísticas después de cada pasada
+      rebalanced.forEach((cluster) => {
+        if (cluster.pois.length === 0) return;
+
+        const avgLat =
+          cluster.pois.reduce((sum, p) => sum + p.coordinates.lat, 0) /
+          cluster.pois.length;
+        const avgLng =
+          cluster.pois.reduce((sum, p) => sum + p.coordinates.lng, 0) /
+          cluster.pois.length;
+        cluster.center = { lat: avgLat, lng: avgLng };
+
+        const distances = cluster.pois.map((poi) =>
+          this.geographicDistance(poi.coordinates, cluster.center)
+        );
+        cluster.stats = {
+          size: cluster.pois.length,
+          avgDistanceToCenter:
+            distances.reduce((a, b) => a + b, 0) / distances.length || 0,
+          maxDistanceToCenter: Math.max(...distances, 0),
+        };
+      });
     }
 
-    // Final assignment
-    const clusters = [];
-    for (let i = 0; i < k; i++) {
-      const clusterPOIs = pois.filter((poi) => {
-        let minDist = Infinity;
-        let closestIdx = 0;
+    return rebalanced.filter((c) => c.pois.length > 0);
+  }
 
-        centroids.forEach((centroid, idx) => {
-          const dist = this.geographicDistance(poi.coordinates, centroid);
-          if (dist < minDist) {
-            minDist = dist;
-            closestIdx = idx;
+  /**
+   * Elimina POIs "huérfanos" - POIs que están más cerca de otro cluster
+   * O POIs que están muy lejos del resto de su propio cluster
+   * Esto evita que haya POIs aislados geográficamente en clusters incorrectos
+   * @private
+   */
+  removeOrphanPOIs(clusters) {
+    console.log('[SMART-POI] Checking for orphan POIs...');
+
+    let totalMoved = 0;
+    const cleaned = clusters.map((c) => ({ ...c, pois: [...c.pois] }));
+
+    // PASO 1: Detectar POIs que están más cerca de otro cluster
+    cleaned.forEach((cluster, clusterIdx) => {
+      const orphans = [];
+
+      cluster.pois.forEach((poi) => {
+        const distToOwnCluster = this.geographicDistance(
+          poi.coordinates,
+          cluster.center
+        );
+
+        // Buscar si hay un cluster más cercano
+        let closestCluster = clusterIdx;
+        let minDist = distToOwnCluster;
+
+        cleaned.forEach((otherCluster, otherIdx) => {
+          if (otherIdx === clusterIdx) return;
+
+          const distToOther = this.geographicDistance(
+            poi.coordinates,
+            otherCluster.center
+          );
+
+          // Si está más cerca del otro cluster (umbral 85%)
+          if (distToOther < minDist * 0.85) {
+            minDist = distToOther;
+            closestCluster = otherIdx;
           }
         });
 
-        return closestIdx === i;
+        if (closestCluster !== clusterIdx) {
+          orphans.push({
+            poi,
+            targetCluster: closestCluster,
+            reason: 'closer-to-other',
+          });
+        }
       });
 
-      if (clusterPOIs.length > 0) {
-        // Calcular métricas del cluster
-        const distances = clusterPOIs.map((poi) =>
-          this.geographicDistance(poi.coordinates, centroids[i])
+      // Mover los huérfanos
+      orphans.forEach(({ poi, targetCluster }) => {
+        cleaned[clusterIdx].pois = cleaned[clusterIdx].pois.filter(
+          (p) => p !== poi
         );
-        const avgDist = distances.reduce((a, b) => a + b, 0) / distances.length;
-        const maxDist = Math.max(...distances);
+        cleaned[targetCluster].pois.push(poi);
+        totalMoved++;
+      });
+    });
 
-        clusters.push({
-          center: centroids[i],
-          pois: clusterPOIs,
-          stats: {
-            size: clusterPOIs.length,
-            avgDistanceToCenter: avgDist,
-            maxDistanceToCenter: maxDist,
-          },
-        });
+    // PASO 2: Detectar POIs que están muy lejos del resto de su cluster
+    cleaned.forEach((cluster, clusterIdx) => {
+      if (cluster.pois.length < 3) return; // Skip clusters pequeños
 
-        console.log(
-          `[SMART-POI]   Cluster ${i + 1}: ${
-            clusterPOIs.length
-          } POIs, avg dist: ${avgDist.toFixed(2)}km, max: ${maxDist.toFixed(
-            2
-          )}km`
+      const outliers = [];
+
+      cluster.pois.forEach((poi) => {
+        // Calcular distancia promedio a los OTROS POIs del cluster (no al centroide)
+        const distancesToOthers = cluster.pois
+          .filter((p) => p !== poi)
+          .map((other) =>
+            this.geographicDistance(poi.coordinates, other.coordinates)
+          );
+
+        const avgDistToOthers =
+          distancesToOthers.reduce((a, b) => a + b, 0) /
+          distancesToOthers.length;
+
+        // Si está muy lejos del resto del cluster (>2x la distancia promedio)
+        const clusterAvgDist = cluster.stats.avgDistanceToCenter;
+        if (avgDistToOthers > clusterAvgDist * 2.5) {
+          // Buscar el cluster más cercano
+          let closestCluster = clusterIdx;
+          let minDist = Infinity;
+
+          cleaned.forEach((otherCluster, otherIdx) => {
+            if (otherIdx === clusterIdx) return;
+
+            const distToOther = this.geographicDistance(
+              poi.coordinates,
+              otherCluster.center
+            );
+
+            if (distToOther < minDist) {
+              minDist = distToOther;
+              closestCluster = otherIdx;
+            }
+          });
+
+          if (closestCluster !== clusterIdx) {
+            outliers.push({
+              poi,
+              targetCluster: closestCluster,
+              reason: 'far-from-cluster',
+            });
+          }
+        }
+      });
+
+      // Mover los outliers
+      outliers.forEach(({ poi, targetCluster }) => {
+        cleaned[clusterIdx].pois = cleaned[clusterIdx].pois.filter(
+          (p) => p !== poi
         );
-      }
+        cleaned[targetCluster].pois.push(poi);
+        totalMoved++;
+      });
+    });
+
+    if (totalMoved > 0) {
+      console.log(
+        `[SMART-POI]   Moved ${totalMoved} orphan POIs to their nearest clusters`
+      );
+
+      // Recalcular centroides y estadísticas
+      cleaned.forEach((cluster) => {
+        if (cluster.pois.length === 0) return;
+
+        const avgLat =
+          cluster.pois.reduce((sum, p) => sum + p.coordinates.lat, 0) /
+          cluster.pois.length;
+        const avgLng =
+          cluster.pois.reduce((sum, p) => sum + p.coordinates.lng, 0) /
+          cluster.pois.length;
+        cluster.center = { lat: avgLat, lng: avgLng };
+
+        const distances = cluster.pois.map((poi) =>
+          this.geographicDistance(poi.coordinates, cluster.center)
+        );
+        cluster.stats = {
+          size: cluster.pois.length,
+          avgDistanceToCenter:
+            distances.reduce((a, b) => a + b, 0) / distances.length || 0,
+          maxDistanceToCenter: Math.max(...distances, 0),
+        };
+      });
     }
 
-    return clusters;
+    return cleaned.filter((c) => c.pois.length > 0);
   }
 
   /**

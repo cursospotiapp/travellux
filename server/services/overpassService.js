@@ -10,6 +10,7 @@ const OVERPASS_ENDPOINT =
   process.env.OVERPASS_ENDPOINT || 'https://overpass-api.de/api/interpreter';
 const TIMEOUT = parseInt(process.env.OVERPASS_TIMEOUT) || 180000; // 3 minutos
 const MAX_RETRIES = parseInt(process.env.OVERPASS_MAX_RETRIES) || 3;
+const DEFAULT_RADIUS = parseInt(process.env.OVERPASS_DEFAULT_RADIUS) || 8000; // 8km por defecto
 
 /**
  * Obtiene MÚLTIPLES imágenes de Wikipedia + Wikidata para un POI
@@ -659,14 +660,14 @@ const INTEREST_TO_OSM_TAGS = {
  */
 const CITY_COORDINATES = {
   // Europa Occidental
-  Roma: { lat: 41.9028, lng: 12.4964, radius: 15000 },
-  Rome: { lat: 41.9028, lng: 12.4964, radius: 15000 },
-  París: { lat: 48.8566, lng: 2.3522, radius: 15000 },
-  Paris: { lat: 48.8566, lng: 2.3522, radius: 15000 },
-  Barcelona: { lat: 41.3851, lng: 2.1734, radius: 15000 },
-  Madrid: { lat: 40.4168, lng: -3.7038, radius: 15000 },
-  Londres: { lat: 51.5074, lng: -0.1278, radius: 15000 },
-  London: { lat: 51.5074, lng: -0.1278, radius: 15000 },
+  Roma: { lat: 41.9028, lng: 12.4964, radius: DEFAULT_RADIUS },
+  Rome: { lat: 41.9028, lng: 12.4964, radius: DEFAULT_RADIUS },
+  París: { lat: 48.8566, lng: 2.3522, radius: DEFAULT_RADIUS },
+  Paris: { lat: 48.8566, lng: 2.3522, radius: DEFAULT_RADIUS },
+  Barcelona: { lat: 41.3851, lng: 2.1734, radius: DEFAULT_RADIUS },
+  Madrid: { lat: 40.4168, lng: -3.7038, radius: DEFAULT_RADIUS },
+  Londres: { lat: 51.5074, lng: -0.1278, radius: DEFAULT_RADIUS },
+  London: { lat: 51.5074, lng: -0.1278, radius: DEFAULT_RADIUS },
   Ámsterdam: { lat: 52.3676, lng: 4.9041, radius: 12000 },
   Amsterdam: { lat: 52.3676, lng: 4.9041, radius: 12000 },
   Lisboa: { lat: 38.7223, lng: -9.1393, radius: 12000 },
@@ -683,8 +684,8 @@ const CITY_COORDINATES = {
   Dublin: { lat: 53.3498, lng: -6.2603, radius: 12000 },
 
   // Europa del Sur
-  Atenas: { lat: 37.9838, lng: 23.7275, radius: 15000 },
-  Athens: { lat: 37.9838, lng: 23.7275, radius: 15000 },
+  Atenas: { lat: 37.9838, lng: 23.7275, radius: DEFAULT_RADIUS },
+  Athens: { lat: 37.9838, lng: 23.7275, radius: DEFAULT_RADIUS },
   Florencia: { lat: 43.7696, lng: 11.2558, radius: 8000 },
   Florence: { lat: 43.7696, lng: 11.2558, radius: 8000 },
   Venecia: { lat: 45.4408, lng: 12.3155, radius: 8000 },
@@ -704,10 +705,10 @@ const CITY_COORDINATES = {
   'New York': { lat: 40.7128, lng: -74.006, radius: 25000 },
   'Los Ángeles': { lat: 34.0522, lng: -118.2437, radius: 30000 },
   'Los Angeles': { lat: 34.0522, lng: -118.2437, radius: 30000 },
-  'San Francisco': { lat: 37.7749, lng: -122.4194, radius: 15000 },
+  'San Francisco': { lat: 37.7749, lng: -122.4194, radius: DEFAULT_RADIUS },
   Chicago: { lat: 41.8781, lng: -87.6298, radius: 20000 },
-  Miami: { lat: 25.7617, lng: -80.1918, radius: 15000 },
-  Washington: { lat: 38.9072, lng: -77.0369, radius: 15000 },
+  Miami: { lat: 25.7617, lng: -80.1918, radius: DEFAULT_RADIUS },
+  Washington: { lat: 38.9072, lng: -77.0369, radius: DEFAULT_RADIUS },
   Boston: { lat: 42.3601, lng: -71.0589, radius: 12000 },
 
   // América Latina
@@ -716,9 +717,9 @@ const CITY_COORDINATES = {
   'Buenos Aires': { lat: -34.6037, lng: -58.3816, radius: 20000 },
   'Río de Janeiro': { lat: -22.9068, lng: -43.1729, radius: 20000 },
   'Rio de Janeiro': { lat: -22.9068, lng: -43.1729, radius: 20000 },
-  Lima: { lat: -12.0464, lng: -77.0428, radius: 15000 },
-  Bogotá: { lat: 4.711, lng: -74.0721, radius: 15000 },
-  Santiago: { lat: -33.4489, lng: -70.6693, radius: 15000 },
+  Lima: { lat: -12.0464, lng: -77.0428, radius: DEFAULT_RADIUS },
+  Bogotá: { lat: 4.711, lng: -74.0721, radius: DEFAULT_RADIUS },
+  Santiago: { lat: -33.4489, lng: -70.6693, radius: DEFAULT_RADIUS },
 
   // Asia
   Tokio: { lat: 35.6762, lng: 139.6503, radius: 25000 },
@@ -729,22 +730,22 @@ const CITY_COORDINATES = {
   'Hong Kong': { lat: 22.3193, lng: 114.1694, radius: 12000 },
   Seúl: { lat: 37.5665, lng: 126.978, radius: 20000 },
   Seoul: { lat: 37.5665, lng: 126.978, radius: 20000 },
-  Dubái: { lat: 25.2048, lng: 55.2708, radius: 15000 },
-  Dubai: { lat: 25.2048, lng: 55.2708, radius: 15000 },
+  Dubái: { lat: 25.2048, lng: 55.2708, radius: DEFAULT_RADIUS },
+  Dubai: { lat: 25.2048, lng: 55.2708, radius: DEFAULT_RADIUS },
   Estambul: { lat: 41.0082, lng: 28.9784, radius: 20000 },
   Istanbul: { lat: 41.0082, lng: 28.9784, radius: 20000 },
 
   // Oceanía
   Sídney: { lat: -33.8688, lng: 151.2093, radius: 18000 },
   Sydney: { lat: -33.8688, lng: 151.2093, radius: 18000 },
-  Melbourne: { lat: -37.8136, lng: 144.9631, radius: 15000 },
+  Melbourne: { lat: -37.8136, lng: 144.9631, radius: DEFAULT_RADIUS },
   Auckland: { lat: -36.8485, lng: 174.7633, radius: 12000 },
 
   // África
   'El Cairo': { lat: 30.0444, lng: 31.2357, radius: 20000 },
   Cairo: { lat: 30.0444, lng: 31.2357, radius: 20000 },
-  'Ciudad del Cabo': { lat: -33.9249, lng: 18.4241, radius: 15000 },
-  'Cape Town': { lat: -33.9249, lng: 18.4241, radius: 15000 },
+  'Ciudad del Cabo': { lat: -33.9249, lng: 18.4241, radius: DEFAULT_RADIUS },
+  'Cape Town': { lat: -33.9249, lng: 18.4241, radius: DEFAULT_RADIUS },
   Marrakech: { lat: 31.6295, lng: -7.9811, radius: 10000 },
 };
 
@@ -902,12 +903,12 @@ async function geocodeCityWithNominatim(cityName) {
     const lng = parseFloat(result.lon);
 
     // Determinar radio según tipo de lugar
-    let radius = 15000; // default 15km
+    let radius = DEFAULT_RADIUS; // default desde .env
     if (result.type === 'city' && result.addressdetails?.population) {
       const population = parseInt(result.addressdetails.population);
       if (population > 5000000) radius = 25000; // mega-ciudad
       else if (population > 2000000) radius = 20000; // gran ciudad
-      else if (population > 500000) radius = 15000; // ciudad grande
+      else if (population > 500000) radius = DEFAULT_RADIUS; // ciudad grande
       else radius = 10000; // ciudad pequeña
     }
 
