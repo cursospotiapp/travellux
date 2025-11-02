@@ -328,15 +328,14 @@ app.post('/api/generate-trip-fast', async (req, res) => {
     const itinerary = [];
 
     // Helper para generar descripciones DINÁMICAS basadas en datos OSM
-    const generateSpanishDescription = (poi, destination) => {
-      // 🔥 PRIORIDAD 1: Usar descripción REAL de Wikipedia si existe
+    const generateSpanishDescription = (poi) => {
+      // 🔥 USAR DESCRIPCIÓN REAL DE WIKIPEDIA O NADA
       if (poi.wikipediaDescription && poi.wikipediaDescription.length > 100) {
         return poi.wikipediaDescription;
       }
 
-      // ❌ SI NO HAY DESCRIPCIÓN DE WIKIPEDIA, DEVOLVER NOMBRE SIMPLE
-      // Mejor vacío que basura genérica
-      return `${poi.name} - ${destination}`;
+      // ❌ SI NO HAY DESCRIPCIÓN, DEVOLVER VACÍO
+      return '';
     };
 
     // Helper para generar tips DINÁMICOS basados en el POI
@@ -465,7 +464,7 @@ app.post('/api/generate-trip-fast', async (req, res) => {
           time: `${9 + idx * 2}:00`,
           duration: '2h',
           title: poi.name,
-          description: generateSpanishDescription(poi, destination),
+          description: generateSpanishDescription(poi),
           type: poi.type || 'Atracción',
           location: {
             name: poi.name,

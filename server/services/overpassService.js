@@ -12,9 +12,10 @@ const TIMEOUT = parseInt(process.env.OVERPASS_TIMEOUT) || 180000; // 3 minutos
 const MAX_RETRIES = parseInt(process.env.OVERPASS_MAX_RETRIES) || 3;
 
 /**
- * Obtiene MÚLTIPLES imágenes de Wikipedia para un POI específico
- * @param {string} wikipediaUrl - URL de Wikipedia (ej: "es:Plaza_Mayor_(Madrid)")
- * @returns {Promise<Array<string>>} Array de URLs de imágenes (máximo 2)
+ * Obtiene MÚLTIPLES imágenes de Wikipedia + Wikidata para un POI
+ * Sistema de fallback: Wikipedia → Wikidata (SIN Commons para evitar imágenes de otras ciudades)
+ * @param {string} wikipediaUrl - URL de Wikipedia (ej: "es:Basílica_del_Pilar")
+ * @returns {Promise<Array<string>>} Array de URLs de imágenes (máximo 3)
  */
 async function fetchWikipediaImages(wikipediaUrl) {
   if (!wikipediaUrl) return [];
@@ -24,70 +25,234 @@ async function fetchWikipediaImages(wikipediaUrl) {
     if (parts.length !== 2) return [];
 
     const lang = parts[0];
-    const title = parts[1];
-
-    // Obtener imágenes del artículo (pageimages da la principal + images da todas)
-    const apiUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
-      title
-    )}&prop=pageimages|images&piprop=original&imlimit=5&format=json&formatversion=2`;
-
-    const response = await axios.get(apiUrl, {
-      timeout: 5000,
-      headers: { 'User-Agent': 'TripPlanner/1.0' },
-    });
-
-    const pageData = response.data?.query?.pages?.[0];
+    let title = parts[1];
     const images = [];
 
-    // 1. Imagen principal (pageimages)
-    if (pageData?.original?.source) {
-      images.push(pageData.original.source);
+    // 🔥 FUENTE 1: Wikipedia API (pageimages + images del artículo)
+    try {
+      const apiUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
+        title
+      )}&prop=pageimages|images&piprop=original&imlimit=10&format=json&formatversion=2`;
+
+      const response = await axios.get(apiUrl, {
+        timeout: 5000,
+        headers: { 'User-Agent': 'TripPlanner/1.0' },
+      });
+
+      let pageData = response.data?.query?.pages?.[0];
+
+      // 🔥 Si la página no existe, buscar título correcto
+      if (pageData?.missing === true) {
+        const correctTitle = await searchCorrectWikipediaTitle(title, lang);
+        if (correctTitle) {
+          title = correctTitle;
+
+          const retryUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
+            correctTitle
+          )}&prop=pageimages|images&piprop=original&imlimit=10&format=json&formatversion=2`;
+
+          const retryResponse = await axios.get(retryUrl, {
+            timeout: 5000,
+            headers: { 'User-Agent': 'TripPlanner/1.0' },
+          });
+
+          pageData = retryResponse.data?.query?.pages?.[0];
+        }
+      }
+
+      // 1A. Imagen principal (pageimages - SIEMPRE la mejor)
+      if (pageData?.original?.source && !pageData.missing) {
+        images.push(pageData.original.source);
+      }
+
+      // 1B. Imágenes del artículo
+      if (
+        pageData?.images &&
+        pageData.images.length > 0 &&
+        images.length < 3 &&
+        !pageData.missing
+      ) {
+        for (const img of pageData.images) {
+          if (images.length >= 3) break;
+
+          const imgTitle = img.title;
+
+          // Filtrar imágenes no deseadas
+          if (
+            imgTitle.includes('Commons-logo') ||
+            imgTitle.includes('Wikidata') ||
+            imgTitle.includes('Wikimedia') ||
+            imgTitle.includes('Logo') ||
+            imgTitle.includes('Icon') ||
+            imgTitle.includes('Flag') ||
+            imgTitle.includes('Coat_of_arms') ||
+            imgTitle.toLowerCase().includes('mapa') ||
+            imgTitle.toLowerCase().includes('map') ||
+            imgTitle.endsWith('.svg')
+          ) {
+            continue;
+          }
+
+          // Obtener URL de esta imagen
+          try {
+            const imgUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
+              imgTitle
+            )}&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&formatversion=2`;
+
+            const imgResponse = await axios.get(imgUrl, {
+              timeout: 3000,
+              headers: { 'User-Agent': 'TripPlanner/1.0' },
+            });
+
+            const imgData = imgResponse.data?.query?.pages?.[0];
+            const imgSourceUrl = imgData?.imageinfo?.[0]?.url;
+
+            if (imgSourceUrl && !images.includes(imgSourceUrl)) {
+              images.push(imgSourceUrl);
+            }
+          } catch (err) {
+            // Continuar con la siguiente
+          }
+        }
+      }
+    } catch (err) {
+      // Continuar con otras fuentes
     }
 
-    // 2. Intentar obtener una segunda imagen de la lista de imágenes del artículo
-    if (pageData?.images && pageData.images.length > 0) {
-      for (const img of pageData.images) {
-        const imgTitle = img.title;
+    // 🔥 FUENTE 2: Wikidata (imagen destacada del elemento)
+    // NO usamos Commons search porque puede traer imágenes de otras ciudades con el mismo nombre
+    if (images.length === 0) {
+      try {
+        // Obtener Wikidata ID del artículo de Wikipedia
+        const wikidataUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
+          title
+        )}&prop=pageprops&ppprop=wikibase_item&format=json&formatversion=2`;
 
-        // Filtrar imágenes comunes que no queremos (logos, iconos, etc)
-        if (
-          imgTitle.includes('Commons-logo') ||
-          imgTitle.includes('Wikidata') ||
-          imgTitle.includes('Wikimedia') ||
-          imgTitle.includes('Logo') ||
-          imgTitle.includes('Icon') ||
-          imgTitle.includes('.svg')
-        ) {
-          continue;
-        }
+        const wikidataResponse = await axios.get(wikidataUrl, {
+          timeout: 3000,
+          headers: { 'User-Agent': 'TripPlanner/1.0' },
+        });
 
-        // Obtener URL de esta imagen
-        try {
-          const imgUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
-            imgTitle
-          )}&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&formatversion=2`;
+        const wikidataId =
+          wikidataResponse.data?.query?.pages?.[0]?.pageprops?.wikibase_item;
 
-          const imgResponse = await axios.get(imgUrl, {
+        if (wikidataId) {
+          // Obtener imagen (P18) del elemento de Wikidata
+          const entityUrl = `https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${wikidataId}&property=P18&format=json`;
+
+          const entityResponse = await axios.get(entityUrl, {
             timeout: 3000,
             headers: { 'User-Agent': 'TripPlanner/1.0' },
           });
 
-          const imgData = imgResponse.data?.query?.pages?.[0];
-          const imgSourceUrl = imgData?.imageinfo?.[0]?.url;
+          const imageClaim = entityResponse.data?.claims?.P18?.[0];
+          const imageFilename = imageClaim?.mainsnak?.datavalue?.value;
 
-          if (imgSourceUrl && !images.includes(imgSourceUrl)) {
-            images.push(imgSourceUrl);
-            break; // Solo queremos 2 imágenes máximo
+          if (imageFilename) {
+            // Convertir nombre de archivo a URL de Commons
+            const commonsUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(
+              imageFilename
+            )}&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&formatversion=2`;
+
+            const commonsResponse = await axios.get(commonsUrl, {
+              timeout: 3000,
+              headers: { 'User-Agent': 'TripPlanner/1.0' },
+            });
+
+            const imgUrl =
+              commonsResponse.data?.query?.pages?.[0]?.imageinfo?.[0]?.url;
+            if (imgUrl && !images.includes(imgUrl)) {
+              images.push(imgUrl);
+            }
           }
-        } catch (err) {
-          // Continuar con la siguiente imagen
+        }
+      } catch (err) {
+        // Última fuente, si falla devolvemos lo que tengamos
+      }
+    }
+
+    return images.slice(0, 3); // Máximo 3 imágenes
+  } catch (error) {
+    return [];
+  }
+}
+/**
+ * Busca el título correcto de Wikipedia cuando el tag OSM está mal
+ * Estrategia: Buscar con y sin modificaciones, priorizar coincidencias exactas
+ * @param {string} badTitle - Título incorrecto de OSM
+ * @param {string} lang - Idioma de Wikipedia
+ * @returns {Promise<string|null>} Título correcto o null
+ */
+async function searchCorrectWikipediaTitle(badTitle, lang = 'es') {
+  try {
+    // ESTRATEGIA 1: Intentar múltiples variantes del título
+    const variants = [];
+
+    // Variante 1: Título original sin modificar
+    variants.push(badTitle);
+
+    // Variante 2: Convertir "de Ciudad" → "(Ciudad)"
+    const withParens = badTitle.replace(
+      /\s+de\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ\s]+)$/i,
+      ' ($1)'
+    );
+    if (withParens !== badTitle) {
+      variants.push(withParens);
+    }
+
+    // Variante 3: Quitar paréntesis completamente
+    const noParens = badTitle
+      .replace(/\([^)]*\)/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    variants.push(noParens);
+
+    // Variante 4: Convertir guiones en espacios
+    variants.push(
+      badTitle.replace(/-/g, ' ').replace(/_/g, ' ').replace(/\s+/g, ' ').trim()
+    );
+
+    // Intentar cada variante con OpenSearch
+    for (const variant of variants) {
+      const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(
+        variant
+      )}&limit=5&format=json`;
+
+      const response = await axios.get(searchUrl, {
+        timeout: 5000,
+        headers: { 'User-Agent': 'TripPlanner/1.0' },
+      });
+
+      const titles = response.data?.[1];
+      if (titles && titles.length > 0) {
+        // PRIORIZAR: Título que contiene las palabras clave del original
+        const keywords = badTitle
+          .toLowerCase()
+          .split(/[\s\-_()]+/)
+          .filter((w) => w.length > 3);
+
+        for (const title of titles) {
+          const titleLower = title.toLowerCase();
+          const matchCount = keywords.filter((k) =>
+            titleLower.includes(k)
+          ).length;
+
+          // Si coinciden al menos el 70% de las palabras clave, es buena coincidencia
+          if (matchCount >= keywords.length * 0.7) {
+            return title;
+          }
+        }
+
+        // Si no hay buena coincidencia, devolver el primer resultado de la mejor variante
+        if (variant === variants[0] || variant === variants[1]) {
+          return titles[0];
         }
       }
     }
 
-    return images.slice(0, 2); // Máximo 2 imágenes
+    return null;
   } catch (error) {
-    return [];
+    return null;
   }
 }
 
@@ -162,9 +327,11 @@ async function fetchWikipediaExtract(wikipediaUrl) {
 
     // 🔥 PASO 2: Si ya está en español o no encontramos versión española, usar el original
     if (!result.extract) {
+      let titleToUse = originalTitle;
+
       const apiUrl = `https://${originalLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
-        originalTitle
-      )}&prop=extracts|pageimages&exintro=0&explaintext=1&piprop=original&format=json&formatversion=2`;
+        titleToUse
+      )}&prop=extracts|pageimages&exintro=0&explaintext=1&piprop=original&redirects=1&format=json&formatversion=2`;
 
       const response = await axios.get(apiUrl, {
         timeout: 8000,
@@ -173,17 +340,55 @@ async function fetchWikipediaExtract(wikipediaUrl) {
       });
 
       const pageData = response.data?.query?.pages?.[0];
-      if (pageData) {
+
+      // 🔥 PASO 2.5: Si la página no existe (missing), buscar el título correcto
+      if (pageData?.missing === true) {
+        const correctTitle = await searchCorrectWikipediaTitle(
+          titleToUse,
+          originalLang
+        );
+        if (correctTitle) {
+          titleToUse = correctTitle;
+
+          // Reintentar con el título correcto
+          const retryUrl = `https://${originalLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
+            correctTitle
+          )}&prop=extracts|pageimages&exintro=0&explaintext=1&piprop=original&format=json&formatversion=2`;
+
+          const retryResponse = await axios.get(retryUrl, {
+            timeout: 8000,
+            headers: { 'User-Agent': 'TripPlanner/1.0' },
+            maxContentLength: 50000,
+          });
+
+          const retryPageData = retryResponse.data?.query?.pages?.[0];
+          if (retryPageData && !retryPageData.missing) {
+            const extract = retryPageData.extract;
+            if (extract && extract.length > 100) {
+              const paragraphs = extract
+                .split('\n')
+                .filter((p) => p.trim().length > 50);
+              result.extract = paragraphs
+                .slice(0, 3)
+                .join(' ')
+                .substring(0, 800);
+            }
+
+            if (retryPageData.original?.source) {
+              result.image = retryPageData.original.source;
+            }
+          }
+        }
+      } else if (pageData && !pageData.missing) {
+        // Página existe con el título original
         const extract = pageData.extract;
         if (extract && extract.length > 100) {
-          // Tomar los primeros 3-4 párrafos (hasta 800 caracteres)
           const paragraphs = extract
             .split('\n')
             .filter((p) => p.trim().length > 50);
           result.extract = paragraphs.slice(0, 3).join(' ').substring(0, 800);
         }
 
-        // Obtener imagen si no la tenemos ya
         if (!result.image && pageData.original?.source) {
           result.image = pageData.original.source;
         }
@@ -200,6 +405,7 @@ async function fetchWikipediaExtract(wikipediaUrl) {
 /**
  * Obtiene información práctica de Wikipedia SIEMPRE EN ESPAÑOL
  * Busca en TODO el contenido de Wikipedia, no solo en el extracto
+ * Con auto-corrección de títulos incorrectos en OSM
  * @param {string} wikipediaUrl - URL de Wikipedia (ej: "it:Colosseo" o "es:Plaza_Mayor")
  * @returns {Promise<Array<string>>} Array de tips prácticos EN ESPAÑOL
  */
@@ -211,12 +417,34 @@ async function fetchWikipediaPracticalInfo(wikipediaUrl) {
     if (parts.length !== 2) return [];
 
     const originalLang = parts[0];
-    const originalTitle = parts[1];
+    let originalTitle = parts[1];
 
     let finalLang = originalLang;
     let finalTitle = originalTitle;
 
-    // 🔥 INTENTAR OBTENER VERSIÓN EN ESPAÑOL
+    // 🔥 PASO 0: Verificar si el título existe, si no buscar el correcto
+    const checkUrl = `https://${originalLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
+      originalTitle
+    )}&format=json&formatversion=2`;
+
+    const checkResponse = await axios.get(checkUrl, {
+      timeout: 3000,
+      headers: { 'User-Agent': 'TripPlanner/1.0' },
+    });
+
+    const checkPage = checkResponse.data?.query?.pages?.[0];
+    if (checkPage?.missing === true) {
+      // El título no existe, buscar el correcto
+      const correctTitle = await searchCorrectWikipediaTitle(
+        originalTitle,
+        originalLang
+      );
+      if (correctTitle) {
+        originalTitle = correctTitle;
+      }
+    }
+
+    // 🔥 PASO 1: INTENTAR OBTENER VERSIÓN EN ESPAÑOL
     if (originalLang !== 'es') {
       try {
         const wikidataUrl = `https://${originalLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
@@ -565,7 +793,8 @@ export async function fetchPOIsFromCity(cityName, options = {}) {
     console.log('[WIKIPEDIA] Enriching POIs with descriptions and tips...');
 
     const BATCH_SIZE = 5; // Máximo 5 requests paralelos
-    for (let i = 0; i < Math.min(pois.length, limit); i += BATCH_SIZE) {
+    // Procesar TODOS los POIs, no solo los primeros 'limit'
+    for (let i = 0; i < pois.length; i += BATCH_SIZE) {
       const batch = pois.slice(i, i + BATCH_SIZE);
 
       await Promise.all(
@@ -1302,16 +1531,16 @@ export async function getPOIDetails(osmId) {
 }
 
 /**
- * Obtiene imágenes de Wikipedia para una lista de POIs seleccionados
- * @param {Array} pois - Array de POIs con campo 'wikipedia'
+ * Obtiene imágenes de Wikipedia + Commons + Wikidata para POIs seleccionados
+ * @param {Array} pois - Array de POIs con campo 'wikipedia' y 'name'
  * @returns {Promise<void>} Modifica los POIs añadiendo campo 'wikipediaImages' (array)
  */
 export async function enrichPOIsWithImages(pois) {
   console.log(
-    `[WIKIPEDIA] Fetching images for ${pois.length} selected POIs...`
+    `[WIKIPEDIA] Fetching images from Wikipedia + Wikidata for ${pois.length} selected POIs...`
   );
 
-  const BATCH_SIZE = 3; // Reducido a 3 porque ahora hacemos más llamadas por POI
+  const BATCH_SIZE = 3; // Solo Wikipedia + Wikidata (más rápido, más preciso)
   let poisWithImages = 0;
   let totalImages = 0;
 
@@ -1335,7 +1564,9 @@ export async function enrichPOIsWithImages(pois) {
   console.log(
     `[WIKIPEDIA] ✓ Added ${totalImages} images to ${poisWithImages}/${
       pois.length
-    } POIs (avg: ${(totalImages / poisWithImages).toFixed(1)} per POI)`
+    } POIs (avg: ${
+      poisWithImages > 0 ? (totalImages / poisWithImages).toFixed(1) : 0
+    } per POI)`
   );
 }
 
