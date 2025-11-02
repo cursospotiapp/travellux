@@ -149,6 +149,39 @@ function TripPlannerDemo() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [mapVisible]);
 
+  // Sticky header effect - add class when header is stuck
+  useEffect(() => {
+    if (!tripData) return;
+
+    const observerOptions = {
+      root: null,
+      rootMargin: '-1px 0px 0px 0px',
+      threshold: [1],
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const header = entry.target.querySelector('.day-header');
+        if (!header) return;
+
+        // When the day section goes above viewport, header is stuck
+        if (!entry.isIntersecting) {
+          header.classList.add('is-stuck');
+        } else {
+          header.classList.remove('is-stuck');
+        }
+      });
+    }, observerOptions);
+
+    // Observe all itinerary day sections
+    const daySections = document.querySelectorAll('.itinerary-day');
+    daySections.forEach((section) => observer.observe(section));
+
+    return () => {
+      daySections.forEach((section) => observer.unobserve(section));
+    };
+  }, [tripData]);
+
   const openMap = (dayIndex, eventIndexToOpen = null) => {
     setMapVisible(true);
     setCurrentDay(dayIndex);
@@ -501,7 +534,7 @@ function TripPlannerDemo() {
           );
           return days.map(([dayKey, day], dayIndex) => (
             <div key={dayKey} className="itinerary-day" data-aos="fade-up">
-              <div className="day-header">
+              <div className="day-header" style={{ zIndex: 10 + dayIndex }}>
                 <h3 className="day-title">
                   {day.title && day.title.startsWith('Día')
                     ? day.title

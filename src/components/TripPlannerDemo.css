@@ -251,9 +251,13 @@
 /* Itinerary - Pixel Perfect */
 .trip-planner-demo .itinerary-day {
   margin-bottom: 4rem;
+  position: relative;
 }
 
 .trip-planner-demo .day-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   background: linear-gradient(
     135deg,
     var(--primary) 0%,
@@ -267,10 +271,24 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+/* Efecto cuando el header está stuck (pegado arriba) */
+.trip-planner-demo .day-header.is-stuck {
+  border-radius: 0;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  padding: 1.5rem 2rem;
+}
+
+.trip-planner-demo .day-header.is-stuck .day-title {
+  font-size: 1.75rem;
 }
 
 .trip-planner-demo .day-title {
   font-size: 2rem;
+  transition: font-size 0.3s ease;
 }
 
 .trip-planner-demo .btn-map {
