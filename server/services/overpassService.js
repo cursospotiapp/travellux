@@ -779,7 +779,7 @@ export async function fetchPOIsFromCity(cityName, options = {}) {
     );
 
     // Construir query Overpass
-    const query = buildOverpassQuery(cityCoords, interests, limit);
+    const query = buildOverpassQuery(cityCoords);
 
     // Ejecutar query con retry
     const data = await executeOverpassQuery(query);
@@ -789,55 +789,10 @@ export async function fetchPOIsFromCity(cityName, options = {}) {
 
     console.log(`[OSM] ✓ Found ${pois.length} POIs for ${cityName}`);
 
-    // 🔥 ENRIQUECER SOLO CON DESCRIPCIONES (SIN IMÁGENES TODAVÍA)
-    console.log('[WIKIPEDIA] Enriching POIs with descriptions and tips...');
-
-    const BATCH_SIZE = 5; // Máximo 5 requests paralelos
-    // Procesar TODOS los POIs, no solo los primeros 'limit'
-    for (let i = 0; i < pois.length; i += BATCH_SIZE) {
-      const batch = pois.slice(i, i + BATCH_SIZE);
-
-      await Promise.all(
-        batch.map(async (poi) => {
-          if (poi.wikipedia) {
-            try {
-              // Obtener SOLO descripción (sin imagen todavía)
-              const wikiData = await fetchWikipediaExtract(poi.wikipedia);
-              if (
-                wikiData &&
-                wikiData.extract &&
-                wikiData.extract.length > 50
-              ) {
-                poi.wikipediaDescription = wikiData.extract;
-              }
-
-              // Obtener información práctica (horarios, precios, etc.)
-              const practicalInfo = await fetchWikipediaPracticalInfo(
-                poi.wikipedia
-              );
-              if (practicalInfo && practicalInfo.length > 0) {
-                poi.wikipediaTips = practicalInfo;
-              }
-            } catch (error) {
-              // Silenciar errores individuales
-            }
-          }
-        })
-      );
-    }
-
-    const enrichedCount = pois.filter((p) => p.wikipediaDescription).length;
-    const tipsCount = pois.filter(
-      (p) => p.wikipediaTips && p.wikipediaTips.length > 0
-    ).length;
+    // ❌ NO ENRIQUECER AQUÍ - Se hará después de seleccionar los POIs finales
+    // para ahorrar llamadas a Wikipedia API
     console.log(
-      `[WIKIPEDIA] ✓ Enriched ${enrichedCount}/${pois.length} POIs with descriptions`
-    );
-    console.log(
-      `[WIKIPEDIA] ✓ Added practical tips to ${tipsCount}/${pois.length} POIs`
-    );
-    console.log(
-      `[WIKIPEDIA] ✓ Added practical tips to ${tipsCount}/${pois.length} POIs`
+      '[OSM] POIs ready (enrichment will be done on selected POIs only)'
     );
 
     return pois;
@@ -972,7 +927,7 @@ async function geocodeCityWithNominatim(cityName) {
  * ESTRATEGIA: Solo POIs con Wikipedia = relevancia garantizada
  * @private
  */
-function buildOverpassQuery(cityCoords, interests, limit) {
+function buildOverpassQuery(cityCoords) {
   const { lat, lng, radius } = cityCoords;
 
   // QUERY OPTIMIZADA: Solo POIs con Wikipedia (alta calidad garantizada)
@@ -1015,13 +970,33 @@ function buildOverpassQuery(cityCoords, interests, limit) {
       node["place"="square"]["wikipedia"](around:${radius},${lat},${lng});
       way["place"="square"]["wikipedia"](around:${radius},${lat},${lng});
       
-      // 🆕 NIVEL 8: Calles históricas/famosas con Wikipedia
+      // NIVEL 8: Calles históricas/famosas con Wikipedia
       way["highway"]["wikipedia"]["name"](around:${radius},${lat},${lng});
       
-      // 🆕 NIVEL 9: Barrios históricos/famosos con Wikipedia
+      // NIVEL 9: Barrios históricos/famosos con Wikipedia
       node["place"="neighbourhood"]["wikipedia"](around:${radius},${lat},${lng});
       way["place"="neighbourhood"]["wikipedia"](around:${radius},${lat},${lng});
       relation["place"="neighbourhood"]["wikipedia"](around:${radius},${lat},${lng});
+      
+      // 🆕 NIVEL 10: Mercados famosos con Wikipedia (Camden Market, Mercado de la Boquería, etc.)
+      node["amenity"="marketplace"]["wikipedia"](around:${radius},${lat},${lng});
+      way["amenity"="marketplace"]["wikipedia"](around:${radius},${lat},${lng});
+      relation["amenity"="marketplace"]["wikipedia"](around:${radius},${lat},${lng});
+      
+      // 🆕 NIVEL 11: Galerías de arte con Wikipedia
+      node["tourism"="gallery"]["wikipedia"](around:${radius},${lat},${lng});
+      way["tourism"="gallery"]["wikipedia"](around:${radius},${lat},${lng});
+      
+      // 🆕 NIVEL 12: Teatros y óperas con Wikipedia
+      node["amenity"="theatre"]["wikipedia"](around:${radius},${lat},${lng});
+      way["amenity"="theatre"]["wikipedia"](around:${radius},${lat},${lng});
+      
+      // 🆕 NIVEL 13: Puentes famosos con Wikipedia
+      way["man_made"="bridge"]["wikipedia"](around:${radius},${lat},${lng});
+      
+      // 🆕 NIVEL 14: Torres famosas con Wikipedia
+      node["man_made"="tower"]["wikipedia"](around:${radius},${lat},${lng});
+      way["man_made"="tower"]["wikipedia"](around:${radius},${lat},${lng});
     );
     out center tags;
   `;
@@ -1166,7 +1141,20 @@ function determinePOIType(tags) {
     return 'street'; // Gran Vía, Calle Laurel, etc.
   }
   if (tags.place === 'neighbourhood' && tags.wikipedia) {
-    return 'neighbourhood'; // Chueca, Malasaña, etc.
+    return 'neighbourhood'; // Chueca, Malasaña, Camden, etc.
+  }
+
+  // 🆕 Mercados
+  if (tags.amenity === 'marketplace') {
+    return 'market'; // Camden Market, Mercado de la Boquería, etc.
+  }
+
+  // 🆕 Puentes y torres
+  if (tags.man_made === 'bridge') {
+    return 'bridge'; // Tower Bridge, Puente de Brooklyn, etc.
+  }
+  if (tags.man_made === 'tower') {
+    return 'tower'; // Torre Eiffel, Big Ben, etc.
   }
 
   // Prioridad: tourism > historic > amenity > leisure
@@ -1179,6 +1167,9 @@ function determinePOIType(tags) {
   if (tags.amenity) {
     if (['restaurant', 'cafe', 'bar'].includes(tags.amenity)) {
       return 'food';
+    }
+    if (tags.amenity === 'theatre') {
+      return 'theatre';
     }
     return tags.amenity;
   }
@@ -1221,14 +1212,34 @@ function calculateRelevanceScore(poi) {
     cathedral: 16,
     palace: 15,
     historic: 15,
-    street: 12, // 🆕 Calles históricas
-    neighbourhood: 10, // 🆕 Barrios históricos
+    market: 16, // 🔥 AUMENTADO de 14 a 16 (mercados son muy populares)
+    bridge: 13, // 🆕 Puentes icónicos (Tower Bridge, Brooklyn Bridge, etc.)
+    tower: 13, // 🆕 Torres famosas (Big Ben, Torre Eiffel, etc.)
+    gallery: 12, // 🆕 Galerías de arte
+    theatre: 12, // 🆕 Teatros y óperas
+    street: 12, // Calles históricas
+    neighbourhood: 10, // Barrios históricos
     park: 10,
     plaza: 12,
     square: 12,
     church: 8,
   };
   score += typePriority[poi.type] || 5;
+
+  // 🔥 BONUS ESPECIAL: Si es un mercado Y tiene tourism=attraction
+  if (poi.type === 'market' && poi.rawTags?.tourism === 'attraction') {
+    score += 30; // 🔥 AUMENTADO de 25 a 30 para mercados turísticos muy famosos
+  }
+
+  // 🔥 BONUS ADICIONAL: Mercados con múltiples características de calidad
+  if (poi.type === 'market') {
+    // +10 si tiene website oficial
+    if (poi.website) score += 10;
+    // +10 si tiene horarios de apertura
+    if (poi.rawTags?.opening_hours) score += 10;
+    // +5 si tiene email de contacto
+    if (poi.rawTags?.email) score += 5;
+  }
 
   // FACTOR 3: Tiene nombre en múltiples idiomas (relevancia internacional)
   if (poi.rawTags) {
@@ -1531,7 +1542,75 @@ export async function getPOIDetails(osmId) {
 }
 
 /**
+ * Enriquece POIs SELECCIONADOS con descripciones y tips de Wikipedia
+ * OPTIMIZACIÓN: Solo procesar los POIs que realmente se van a mostrar
+ * MEJORADO: Procesamiento en batches más eficiente
+ * @param {Array} pois - Array de POIs seleccionados
+ * @returns {Promise<void>} Modifica los POIs in-place
+ */
+export async function enrichPOIsWithDescriptions(pois) {
+  console.log(
+    `[WIKIPEDIA] Enriching ${pois.length} SELECTED POIs with descriptions and tips...`
+  );
+
+  const BATCH_SIZE = 8; // Aumentado de 5 a 8 para más paralelismo
+  let enrichedCount = 0;
+  let tipsCount = 0;
+  const startTime = Date.now();
+
+  // Filtrar POIs que tienen Wikipedia
+  const poisWithWikipedia = pois.filter((p) => p.wikipedia);
+  console.log(
+    `[WIKIPEDIA] Processing ${poisWithWikipedia.length}/${pois.length} POIs with Wikipedia tags`
+  );
+
+  for (let i = 0; i < poisWithWikipedia.length; i += BATCH_SIZE) {
+    const batch = poisWithWikipedia.slice(i, i + BATCH_SIZE);
+
+    await Promise.all(
+      batch.map(async (poi) => {
+        try {
+          // Ejecutar en paralelo: descripción + tips
+          const [wikiData, practicalInfo] = await Promise.all([
+            fetchWikipediaExtract(poi.wikipedia),
+            fetchWikipediaPracticalInfo(poi.wikipedia),
+          ]);
+
+          // Asignar descripción
+          if (wikiData && wikiData.extract && wikiData.extract.length > 50) {
+            poi.wikipediaDescription = wikiData.extract;
+            enrichedCount++;
+          }
+
+          // Asignar tips
+          if (practicalInfo && practicalInfo.length > 0) {
+            poi.wikipediaTips = practicalInfo;
+            tipsCount++;
+          }
+        } catch {
+          // Silenciar errores individuales
+        }
+      })
+    );
+
+    // Pequeña pausa entre batches para no saturar Wikipedia API
+    if (i + BATCH_SIZE < poisWithWikipedia.length) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+  console.log(
+    `[WIKIPEDIA] ✓ Enriched ${enrichedCount}/${pois.length} POIs with descriptions in ${totalTime}s`
+  );
+  console.log(
+    `[WIKIPEDIA] ✓ Added practical tips to ${tipsCount}/${pois.length} POIs`
+  );
+}
+
+/**
  * Obtiene imágenes de Wikipedia + Commons + Wikidata para POIs seleccionados
+ * MEJORADO: Procesamiento paralelo más eficiente
  * @param {Array} pois - Array de POIs con campo 'wikipedia' y 'name'
  * @returns {Promise<void>} Modifica los POIs añadiendo campo 'wikipediaImages' (array)
  */
@@ -1540,31 +1619,42 @@ export async function enrichPOIsWithImages(pois) {
     `[WIKIPEDIA] Fetching images from Wikipedia + Wikidata for ${pois.length} selected POIs...`
   );
 
-  const BATCH_SIZE = 3; // Solo Wikipedia + Wikidata (más rápido, más preciso)
+  const BATCH_SIZE = 8; // Aumentado para más paralelismo
   let poisWithImages = 0;
   let totalImages = 0;
+  const startTime = Date.now();
 
-  for (let i = 0; i < pois.length; i += BATCH_SIZE) {
-    const batch = pois.slice(i, i + BATCH_SIZE);
+  // Filtrar POIs que tienen Wikipedia
+  const poisWithWikipedia = pois.filter((p) => p.wikipedia);
+  console.log(
+    `[WIKIPEDIA] Processing ${poisWithWikipedia.length}/${pois.length} POIs with Wikipedia tags`
+  );
+
+  for (let i = 0; i < poisWithWikipedia.length; i += BATCH_SIZE) {
+    const batch = poisWithWikipedia.slice(i, i + BATCH_SIZE);
 
     await Promise.all(
       batch.map(async (poi) => {
-        if (poi.wikipedia) {
-          const images = await fetchWikipediaImages(poi.wikipedia);
-          if (images.length > 0) {
-            poi.wikipediaImages = images;
-            poisWithImages++;
-            totalImages += images.length;
-          }
+        const images = await fetchWikipediaImages(poi.wikipedia);
+        if (images.length > 0) {
+          poi.wikipediaImages = images;
+          poisWithImages++;
+          totalImages += images.length;
         }
       })
     );
+
+    // Pequeña pausa entre batches
+    if (i + BATCH_SIZE < poisWithWikipedia.length) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
   }
 
+  const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
   console.log(
     `[WIKIPEDIA] ✓ Added ${totalImages} images to ${poisWithImages}/${
       pois.length
-    } POIs (avg: ${
+    } POIs in ${totalTime}s (avg: ${
       poisWithImages > 0 ? (totalImages / poisWithImages).toFixed(1) : 0
     } per POI)`
   );
@@ -1577,4 +1667,5 @@ export default {
   searchLandmarkByName,
   searchMultipleLandmarks,
   enrichPOIsWithImages,
+  enrichPOIsWithDescriptions,
 };

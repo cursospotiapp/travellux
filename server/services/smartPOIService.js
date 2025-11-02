@@ -4,13 +4,15 @@
  * Algorithm:
  * 1. Calculate total POIs = days × poisPerDay (based on intensity)
  * 2. Fetch Wikipedia-filtered POIs from OpenStreetMap (high quality only)
- * 3. Select TOP N POIs by relevanceScore
+ * 3. Categorize POIs (monuments, culture, streets) and select with weighted distribution
  * 4. Divide city into N geographic phases using K-means clustering
  * 5. Assign poisPerDay closest POIs to each phase
  * 6. Optimize route within each phase using nearest-neighbor
+ * 7. Enrich selected POIs in parallel (descriptions + images)
  */
 
 import { fetchPOIsFromCity } from './overpassService.js';
+import categoryRankingService from './categoryRankingService.js';
 
 /**
  * Intensity configuration
@@ -82,13 +84,27 @@ class SmartPOIService {
       const deduplicated = this.deduplicatePOIs(allPOIs);
       console.log(`[SMART-POI] ✓ ${deduplicated.length} unique POIs`);
 
-      // STEP 3: Select TOP N by relevanceScore
+      // 🔥 STEP 3: Categorize POIs and generate rankings
       console.log(
-        `[SMART-POI] STEP 3: Selecting TOP ${totalPOIsNeeded} by relevanceScore...`
+        `[SMART-POI] STEP 3: Categorizing POIs (monuments, culture, streets)...`
       );
-      const topPOIs = deduplicated
-        .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
-        .slice(0, totalPOIsNeeded);
+      const categorized = categoryRankingService.categorizePOIs(deduplicated);
+
+      // Generate and print rankings (debugging)
+      const rankings =
+        categoryRankingService.generateCategoryRankings(categorized);
+      if (process.env.DEBUG_RANKINGS === 'true') {
+        categoryRankingService.printCategoryRankings(rankings);
+      }
+
+      // 🔥 STEP 4: Select TOP N POIs with weighted distribution
+      console.log(
+        `[SMART-POI] STEP 4: Selecting ${totalPOIsNeeded} POIs with weighted distribution...`
+      );
+      const topPOIs = categoryRankingService.selectTopPOIsByCategory(
+        categorized,
+        totalPOIsNeeded
+      );
 
       const avgScore =
         topPOIs.reduce((sum, p) => sum + (p.relevanceScore || 0), 0) /
@@ -98,23 +114,17 @@ class SmartPOIService {
           topPOIs.length
         } POIs (avg score: ${avgScore.toFixed(1)})`
       );
-      console.log(
-        `[SMART-POI] Top 5: ${topPOIs
-          .slice(0, 5)
-          .map((p) => p.name)
-          .join(', ')}`
-      );
 
-      // STEP 4: Divide city into N geographic phases (K-means clustering)
+      // 🔥 STEP 5: Divide city into N geographic phases (K-means clustering)
       console.log(
-        `[SMART-POI] STEP 4: K-means clustering into ${numDays} phases...`
+        `[SMART-POI] STEP 5: K-means clustering into ${numDays} phases...`
       );
       const phases = this.kMeansGeographic(topPOIs, numDays);
       console.log(`[SMART-POI] ✓ Created ${phases.length} phases`);
 
-      // STEP 5: Assign POIs to each phase with better distance validation
+      // 🔥 STEP 6: Assign POIs to each phase with better distance validation
       console.log(
-        `[SMART-POI] STEP 5: Assigning ${poisPerDay} POIs to each phase...`
+        `[SMART-POI] STEP 6: Assigning ${poisPerDay} POIs to each phase...`
       );
       const dayByDay = {};
       let remainingPOIs = [...topPOIs];
@@ -180,13 +190,29 @@ class SmartPOIService {
       // ❌ ELIMINADO: Las búsquedas de restaurantes saturan la API de Overpass
       // TODO: Implementar con caché local o usar API de Google Places
 
-      // 🔥 STEP 6: Obtener imágenes SOLO de los POIs seleccionados
-      console.log('[SMART-POI] STEP 6: Fetching images for selected POIs...');
+      // 🔥 STEP 7: Enriquecer SOLO los POIs seleccionados EN PARALELO
+      console.log(
+        '[SMART-POI] STEP 7: Enriching selected POIs (parallel: descriptions + images)...'
+      );
       const allSelectedPOIs = Object.values(dayByDay).flatMap(
         (day) => day.pois
       );
-      const { enrichPOIsWithImages } = await import('./overpassService.js');
-      await enrichPOIsWithImages(allSelectedPOIs);
+      const { enrichPOIsWithDescriptions, enrichPOIsWithImages } = await import(
+        './overpassService.js'
+      );
+
+      const enrichmentStart = Date.now();
+
+      // 🚀 EJECUTAR EN PARALELO: descripciones + tips + imágenes
+      await Promise.all([
+        enrichPOIsWithDescriptions(allSelectedPOIs),
+        enrichPOIsWithImages(allSelectedPOIs),
+      ]);
+
+      const enrichmentTime = ((Date.now() - enrichmentStart) / 1000).toFixed(2);
+      console.log(
+        `[SMART-POI] ✓ Enrichment completed in ${enrichmentTime}s (parallel)`
+      );
 
       const totalAssigned = Object.values(dayByDay).reduce(
         (sum, day) => sum + day.poisCount,
@@ -241,16 +267,31 @@ class SmartPOIService {
   }
 
   /**
-   * K-means geographic clustering
+   * K-means geographic clustering MEJORADO
+   * Usa K-means++ para mejor inicialización
+   * Incluye métricas de calidad (silhouette score aproximado)
    * @private
    */
   kMeansGeographic(pois, k) {
-    const maxIterations = 10;
+    const maxIterations = 20; // Aumentado de 10 a 20 para mejor convergencia
 
-    // Initialize centroids
-    let centroids = this.initializeCentroids(pois, k);
+    console.log(
+      `[SMART-POI] K-means clustering: ${pois.length} POIs into ${k} clusters`
+    );
 
-    // K-means iterations
+    // Initialize centroids usando K-means++ (mejor distribución inicial)
+    let centroids = this.initializeCentroidsKMeansPlusPlus(pois, k);
+
+    console.log(
+      `[SMART-POI] Initial centroids separation: ${this.calculateAvgSeparation(
+        centroids
+      ).toFixed(2)}km`
+    );
+
+    let previousAssignments = [];
+    let converged = false;
+
+    // K-means iterations con early stopping
     for (let iter = 0; iter < maxIterations; iter++) {
       const assignments = pois.map((poi) => {
         let minDist = Infinity;
@@ -267,12 +308,25 @@ class SmartPOIService {
         return closestIdx;
       });
 
+      // Check convergence (si las asignaciones no cambian)
+      if (
+        previousAssignments.length > 0 &&
+        assignments.every((a, i) => a === previousAssignments[i])
+      ) {
+        console.log(`[SMART-POI] K-means converged at iteration ${iter + 1}`);
+        converged = true;
+        break;
+      }
+
+      previousAssignments = [...assignments];
+
       // Recalculate centroids
       const newCentroids = [];
       for (let i = 0; i < k; i++) {
         const clusterPOIs = pois.filter((_, idx) => assignments[idx] === i);
 
         if (clusterPOIs.length === 0) {
+          // Si un cluster está vacío, mantener el centroide anterior
           newCentroids.push(centroids[i]);
         } else {
           const avgLat =
@@ -286,6 +340,12 @@ class SmartPOIService {
       }
 
       centroids = newCentroids;
+    }
+
+    if (!converged) {
+      console.log(
+        `[SMART-POI] K-means reached max iterations (${maxIterations})`
+      );
     }
 
     // Final assignment
@@ -307,10 +367,30 @@ class SmartPOIService {
       });
 
       if (clusterPOIs.length > 0) {
+        // Calcular métricas del cluster
+        const distances = clusterPOIs.map((poi) =>
+          this.geographicDistance(poi.coordinates, centroids[i])
+        );
+        const avgDist = distances.reduce((a, b) => a + b, 0) / distances.length;
+        const maxDist = Math.max(...distances);
+
         clusters.push({
           center: centroids[i],
           pois: clusterPOIs,
+          stats: {
+            size: clusterPOIs.length,
+            avgDistanceToCenter: avgDist,
+            maxDistanceToCenter: maxDist,
+          },
         });
+
+        console.log(
+          `[SMART-POI]   Cluster ${i + 1}: ${
+            clusterPOIs.length
+          } POIs, avg dist: ${avgDist.toFixed(2)}km, max: ${maxDist.toFixed(
+            2
+          )}km`
+        );
       }
     }
 
@@ -353,9 +433,10 @@ class SmartPOIService {
   /**
    * Initialize K-means centroids using K-means++ algorithm
    * (Ensures centroids are well-distributed geographically)
+   * MEJORADO: Usa probabilidades ponderadas por distancia al cuadrado
    * @private
    */
-  initializeCentroids(pois, k) {
+  initializeCentroidsKMeansPlusPlus(pois, k) {
     if (pois.length === 0) return [];
 
     const centroids = [];
@@ -364,34 +445,38 @@ class SmartPOIService {
     const firstIdx = Math.floor(Math.random() * pois.length);
     centroids.push({ ...pois[firstIdx].coordinates });
 
-    // 2. For each subsequent centroid, choose POI furthest from existing centroids
-    while (centroids.length < k) {
-      let maxDist = -1;
-      let furthestIdx = 0;
-
-      pois.forEach((poi, idx) => {
+    // 2. For each subsequent centroid, choose POI with probability proportional to D(x)^2
+    // donde D(x) = distancia al centroide más cercano
+    for (let i = 1; i < k; i++) {
+      const distances = pois.map((poi) => {
         // Find minimum distance to existing centroids
-        const minDistToCentroid = Math.min(
+        const minDist = Math.min(
           ...centroids.map((centroid) =>
             this.geographicDistance(poi.coordinates, centroid)
           )
         );
-
-        // Select POI with maximum minimum distance (furthest from all centroids)
-        if (minDistToCentroid > maxDist) {
-          maxDist = minDistToCentroid;
-          furthestIdx = idx;
-        }
+        return minDist;
       });
 
-      centroids.push({ ...pois[furthestIdx].coordinates });
+      // Calcular distancias al cuadrado (D(x)^2)
+      const squaredDistances = distances.map((d) => d * d);
+      const totalSquaredDist = squaredDistances.reduce((a, b) => a + b, 0);
+
+      // Selección aleatoria ponderada
+      let random = Math.random() * totalSquaredDist;
+      let selectedIdx = 0;
+
+      for (let j = 0; j < squaredDistances.length; j++) {
+        random -= squaredDistances[j];
+        if (random <= 0) {
+          selectedIdx = j;
+          break;
+        }
+      }
+
+      centroids.push({ ...pois[selectedIdx].coordinates });
     }
 
-    console.log(
-      `[SMART-POI] K-means++ initialized ${k} centroids with avg separation: ${this.calculateAvgSeparation(
-        centroids
-      ).toFixed(2)}km`
-    );
     return centroids;
   }
 
