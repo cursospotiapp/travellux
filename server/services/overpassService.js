@@ -32,7 +32,7 @@ async function fetchWikipediaImages(wikipediaUrl) {
     try {
       const apiUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
         title
-      )}&prop=pageimages|images&piprop=original&imlimit=10&format=json&formatversion=2`;
+      )}&prop=pageimages|images&piprop=original&imlimit=10&redirects=1&format=json&formatversion=2`;
 
       const response = await axios.get(apiUrl, {
         timeout: 5000,
@@ -49,7 +49,7 @@ async function fetchWikipediaImages(wikipediaUrl) {
 
           const retryUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
             correctTitle
-          )}&prop=pageimages|images&piprop=original&imlimit=10&format=json&formatversion=2`;
+          )}&prop=pageimages|images&piprop=original&imlimit=10&redirects=1&format=json&formatversion=2`;
 
           const retryResponse = await axios.get(retryUrl, {
             timeout: 5000,
@@ -293,7 +293,7 @@ async function fetchWikipediaExtract(wikipediaUrl) {
           // Obtener contenido completo en español + imagen
           const spanishApiUrl = `https://es.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
             spanishTitle
-          )}&prop=extracts|pageimages&exintro=0&explaintext=1&piprop=original&format=json&formatversion=2`;
+          )}&prop=extracts|pageimages&exintro=0&explaintext=1&piprop=original&redirects=1&format=json&formatversion=2`;
           const spanishResponse = await axios.get(spanishApiUrl, {
             timeout: 8000,
             headers: { 'User-Agent': 'TripPlanner/1.0' },
@@ -353,7 +353,7 @@ async function fetchWikipediaExtract(wikipediaUrl) {
           // Reintentar con el título correcto
           const retryUrl = `https://${originalLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
             correctTitle
-          )}&prop=extracts|pageimages&exintro=0&explaintext=1&piprop=original&format=json&formatversion=2`;
+          )}&prop=extracts|pageimages&exintro=0&explaintext=1&piprop=original&redirects=1&format=json&formatversion=2`;
 
           const retryResponse = await axios.get(retryUrl, {
             timeout: 8000,
@@ -468,7 +468,7 @@ async function fetchWikipediaPracticalInfo(wikipediaUrl) {
     // Obtener TODO el contenido de Wikipedia en texto plano
     const apiUrl = `https://${finalLang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
       finalTitle
-    )}&prop=extracts&explaintext=1&format=json&formatversion=2`;
+    )}&prop=extracts&explaintext=1&redirects=1&format=json&formatversion=2`;
 
     const response = await axios.get(apiUrl, {
       timeout: 8000,
