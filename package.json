@@ -1,12 +1,15 @@
 {
   "name": "planner-trip",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "rsbuild dev",
     "build": "rsbuild build",
     "preview": "rsbuild preview",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "server": "node server/index.js",
+    "dev:server": "nodemon server/index.js"
   },
   "keywords": [],
   "author": "",
@@ -18,10 +21,16 @@
     "@rsbuild/plugin-react": "^1.4.1",
     "eslint": "^9.38.0",
     "globals": "^16.4.0",
+    "nodemon": "^3.1.9",
     "typescript-eslint": "^8.46.2"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "aos": "^2.3.4",
+    "axios": "^1.13.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
     "flatpickr": "^4.6.13",
     "leaflet": "^1.9.4",
     "react": "^19.2.0",

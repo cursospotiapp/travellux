@@ -12,6 +12,36 @@ import { generateTrip, calculateTotalCost } from '../utils/dataHelpers';
 import exampleTrip from '../data/example-trip-paris.json';
 import './TripPlannerDemo.css';
 
+// Helper para calcular hora de fin a partir de hora inicio y duración
+function calculateEndTime(startTime, duration) {
+  if (!startTime || !duration) return null;
+
+  // Parsear hora de inicio (formato "HH:mm" o "HH:MM")
+  const [hours, minutes] = startTime.split(':').map(Number);
+
+  // Parsear duración (formato "2h", "1.5h", "30min", etc.)
+  let durationMinutes = 0;
+  const hourMatch = duration.match(/(\d+\.?\d*)h/);
+  const minMatch = duration.match(/(\d+)\s*min/);
+
+  if (hourMatch) {
+    durationMinutes += parseFloat(hourMatch[1]) * 60;
+  }
+  if (minMatch) {
+    durationMinutes += parseInt(minMatch[1]);
+  }
+
+  // Calcular hora final
+  const totalMinutes = hours * 60 + minutes + durationMinutes;
+  const endHours = Math.floor(totalMinutes / 60) % 24;
+  const endMinutes = Math.floor(totalMinutes % 60);
+
+  return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(
+    2,
+    '0'
+  )}`;
+}
+
 function TripPlannerDemo() {
   const [tripData, setTripData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,22 +62,37 @@ function TripPlannerDemo() {
         offset: 100,
       });
 
-      // TEMPORAL: Forzar uso del ejemplo completo
-      // Comentar esta línea cuando generateTrip() esté completo
-      sessionStorage.removeItem('travelPreferences');
-
       // Check if there are preferences in sessionStorage
+      const storedAI = sessionStorage.getItem('aiTripData');
       const storedPrefs = sessionStorage.getItem('travelPreferences');
 
-      let trip;
-      if (storedPrefs) {
-        const prefs = JSON.parse(storedPrefs);
-        console.log('⚙️ Using generateTrip() with preferences:', prefs);
-        // Generate trip based on user preferences
-        trip = generateTrip(prefs);
-      } else {
+      let trip = null;
+
+      // Prioridad 1: Datos generados por IA
+      if (storedAI) {
+        try {
+          trip = JSON.parse(storedAI);
+          console.log('🤖 Using AI-generated trip data');
+          console.log('📊 AI Trip:', trip);
+        } catch (e) {
+          console.warn('Failed to parse aiTripData, falling back.', e);
+        }
+      }
+
+      // Prioridad 2: Generar con preferencias del usuario
+      if (!trip && storedPrefs) {
+        try {
+          const prefs = JSON.parse(storedPrefs);
+          console.log('⚙️ Using generateTrip() with preferences:', prefs);
+          trip = generateTrip(prefs);
+        } catch (e) {
+          console.warn('Failed to generate trip from prefs:', e);
+        }
+      }
+
+      // Prioridad 3: Datos de ejemplo por defecto
+      if (!trip) {
         console.log('📦 Using example trip data (full 3 days)');
-        // Use example trip data
         trip = exampleTrip;
       }
 
@@ -110,9 +155,15 @@ function TripPlannerDemo() {
 
     setTimeout(() => {
       if (!mapInstanceRef.current) {
-        // Initialize map with center and zoom to fix Leaflet error
+        // Obtener coordenadas del centro de la ciudad desde tripSummary
+        const centerCoords = tripData?.tripSummary?.centerCoordinates || {
+          lat: 40.4168,
+          lng: -3.7038,
+        };
+
+        // Initialize map with center from trip data
         mapInstanceRef.current = L.map(mapRef.current).setView(
-          [48.8566, 2.3522],
+          [centerCoords.lat, centerCoords.lng],
           12
         );
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -128,83 +179,132 @@ function TripPlannerDemo() {
         mapInstanceRef.current.removeLayer(polylineRef.current);
       markersRef.current = [];
 
-      const dayKey = `day${dayIndex + 1}`;
-      const day = tripData.itinerary[dayKey];
+      const selectedDayKey = `day${dayIndex + 1}`;
+      const selectedDay = tripData.itinerary[selectedDayKey];
 
-      if (!day || !day.events) {
-        console.error('No day data found for', dayKey);
+      console.log(`[MAP] Opening map - selected day: ${selectedDayKey}`, {
+        dayExists: !!selectedDay,
+        eventsCount: selectedDay?.events?.length || 0,
+      });
+
+      if (!selectedDay || !selectedDay.events) {
+        console.error('No day data found for', selectedDayKey);
         return;
       }
 
-      const latLngs = [];
+      // 🔥 MOSTRAR TODOS LOS DÍAS EN EL MAPA
+      const allDayLatLngs = []; // Para calcular bounds de todos los días
+      const selectedDayLatLngs = []; // Para zoom inicial en el día seleccionado
 
-      // Add numbered markers for each event
-      day.events.forEach((event, index) => {
-        if (event.location && event.location.coordinates) {
-          const markerIcon = L.divIcon({
-            className: 'custom-marker-wrapper',
-            html: `<div class="custom-marker">${index + 1}</div>`,
-            iconSize: [36, 36],
-            iconAnchor: [18, 18],
-          });
+      Object.keys(tripData.itinerary).forEach((dayKey) => {
+        const day = tripData.itinerary[dayKey];
+        const dayNum = parseInt(dayKey.replace('day', ''));
+        const isSelectedDay = dayKey === selectedDayKey;
 
-          const marker = L.marker(
-            [event.location.coordinates.lat, event.location.coordinates.lng],
-            {
-              icon: markerIcon,
-            }
-          )
-            .addTo(mapInstanceRef.current)
-            .bindPopup(
-              `<div class="custom-popup">
-                <strong>${event.title}</strong>
-                <span class="popup-time">🕐 ${event.time}</span>
-                <span class="popup-duration">⏱️ ${event.duration}</span>
-              </div>`,
-              {
-                className: 'custom-leaflet-popup',
-                maxWidth: 300,
-              }
-            );
+        if (!day || !day.events) return;
 
-          // If this is the event to open, open its popup and center on it
-          if (eventIndexToOpen !== null && index === eventIndexToOpen) {
-            setTimeout(() => {
-              marker.openPopup();
-              mapInstanceRef.current.setView(
-                [
-                  event.location.coordinates.lat,
-                  event.location.coordinates.lng,
-                ],
-                15
+        // Add numbered markers for each event
+        day.events.forEach((event, index) => {
+          if (event.location && event.location.coordinates) {
+            const coords = [
+              event.location.coordinates.lat,
+              event.location.coordinates.lng,
+            ];
+
+            // Color diferente para cada día
+            const dayColors = [
+              '#d4af37',
+              '#4299e1',
+              '#48bb78',
+              '#ed8936',
+              '#9f7aea',
+            ];
+            const markerColor = dayColors[(dayNum - 1) % dayColors.length];
+
+            const markerIcon = L.divIcon({
+              className: 'custom-marker-wrapper',
+              html: `<div class="custom-marker" style="background-color: ${markerColor}; ${
+                isSelectedDay ? 'transform: scale(1.2);' : 'opacity: 0.7;'
+              }">${index + 1}</div>`,
+              iconSize: [36, 36],
+              iconAnchor: [18, 18],
+            });
+
+            const marker = L.marker(coords, { icon: markerIcon })
+              .addTo(mapInstanceRef.current)
+              .bindPopup(
+                `<div class="custom-popup">
+                  <strong>${event.title}</strong>
+                  <span class="popup-time">📅 Día ${dayNum} - 🕐 ${event.time}</span>
+                  <span class="popup-duration">⏱️ ${event.duration}</span>
+                </div>`,
+                { className: 'custom-leaflet-popup', maxWidth: 300 }
               );
-            }, 200);
-          }
 
-          markersRef.current.push(marker);
-          latLngs.push([
-            event.location.coordinates.lat,
-            event.location.coordinates.lng,
-          ]);
+            // If this is the event to open on the selected day
+            if (
+              isSelectedDay &&
+              eventIndexToOpen !== null &&
+              index === eventIndexToOpen
+            ) {
+              setTimeout(() => {
+                marker.openPopup();
+                mapInstanceRef.current.setView(coords, 15);
+              }, 200);
+            }
+
+            markersRef.current.push(marker);
+            allDayLatLngs.push(coords);
+
+            if (isSelectedDay) {
+              selectedDayLatLngs.push(coords);
+            }
+          }
+        });
+
+        // Draw route lines for this day
+        const dayLatLngs = day.events
+          .filter((e) => e.location?.coordinates)
+          .map((e) => [e.location.coordinates.lat, e.location.coordinates.lng]);
+
+        if (dayLatLngs.length > 1) {
+          for (let i = 0; i < dayLatLngs.length - 1; i++) {
+            const dayColors = [
+              '#d4af37',
+              '#4299e1',
+              '#48bb78',
+              '#ed8936',
+              '#9f7aea',
+            ];
+            const lineColor = dayColors[(dayNum - 1) % dayColors.length];
+
+            const line = L.polyline([dayLatLngs[i], dayLatLngs[i + 1]], {
+              color: lineColor,
+              weight: isSelectedDay ? 4 : 2,
+              opacity: isSelectedDay ? 0.85 : 0.4,
+              smoothFactor: 1,
+              lineCap: 'round',
+              lineJoin: 'round',
+            }).addTo(mapInstanceRef.current);
+
+            markersRef.current.push(line);
+          }
         }
       });
 
-      // Draw route line
-      if (latLngs.length > 1) {
-        polylineRef.current = L.polyline(latLngs, {
-          color: '#1a365d',
-          weight: 4,
-          opacity: 1,
-          dashArray: '8, 8',
-        }).addTo(mapInstanceRef.current);
+      console.log(
+        `[MAP] Total markers/lines: ${markersRef.current.length}, Selected day POIs: ${selectedDayLatLngs.length}, All days POIs: ${allDayLatLngs.length}`
+      );
 
-        // Fit map to show all markers (only if no specific event was selected)
-        if (eventIndexToOpen === null) {
-          mapInstanceRef.current.fitBounds(latLngs, { padding: [50, 50] });
+      // 🔥 ZOOM INICIAL: Centrar en el día seleccionado, pero usuario puede hacer zoom out para ver todos
+      if (eventIndexToOpen === null) {
+        if (selectedDayLatLngs.length > 1) {
+          mapInstanceRef.current.fitBounds(selectedDayLatLngs, {
+            padding: [50, 50],
+          });
+        } else if (selectedDayLatLngs.length === 1) {
+          mapInstanceRef.current.setView(selectedDayLatLngs[0], 14);
         }
-      } else if (latLngs.length === 1) {
-        // If only one marker, center on it
-        mapInstanceRef.current.setView(latLngs[0], 14);
       }
     }, 100);
   };
@@ -241,6 +341,7 @@ function TripPlannerDemo() {
           className="btn-back-home"
           onClick={() => {
             sessionStorage.removeItem('travelPreferences');
+            sessionStorage.removeItem('aiTripData');
             window.showLanding();
           }}
           title="Volver al inicio"
@@ -265,6 +366,36 @@ function TripPlannerDemo() {
           Madrid → {tripData.tripSummary.destination} |{' '}
           {tripData.tripSummary.duration} días de experiencia inolvidable
         </p>
+
+        {/* Badge indicando uso de POIs reales de OpenStreetMap */}
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginTop: '12px',
+            padding: '8px 16px',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '20px',
+            fontSize: '14px',
+            fontWeight: '500',
+            color: 'white',
+            boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
+          }}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          <span>POIs verificados con OpenStreetMap + Wikidata</span>
+        </div>
       </header>
 
       {/* Hotels Section */}
@@ -322,13 +453,15 @@ function TripPlannerDemo() {
                     {hotel.location.area}, {hotel.location.description}
                   </span>
                 </div>
-                <div className="hotel-amenities">
-                  {hotel.amenities.map((amenity, i) => (
-                    <span key={i} className="amenity-tag">
-                      {amenity}
-                    </span>
-                  ))}
-                </div>
+                {hotel.amenities && hotel.amenities.length > 0 && (
+                  <div className="hotel-amenities">
+                    {hotel.amenities.map((amenity, i) => (
+                      <span key={i} className="amenity-tag">
+                        {amenity}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div className="hotel-price">
                   <div>
                     <div className="price-amount">€{hotel.price.amount}</div>
@@ -370,7 +503,11 @@ function TripPlannerDemo() {
             <div key={dayKey} className="itinerary-day" data-aos="fade-up">
               <div className="day-header">
                 <h3 className="day-title">
-                  Día {dayIndex + 1}: {day.title}
+                  {day.title && day.title.startsWith('Día')
+                    ? day.title
+                    : `Día ${dayIndex + 1}: ${
+                        day.title || tripData.tripSummary.destination
+                      }`}
                 </h3>
                 <button className="btn-map" onClick={() => openMap(dayIndex)}>
                   <svg
@@ -398,7 +535,12 @@ function TripPlannerDemo() {
                         <div className="event-carousel">
                           <div className="swiper">
                             <div className="swiper-wrapper">
-                              {event.images.map((image, imgIndex) => (
+                              {(event.images && event.images.length > 0
+                                ? event.images
+                                : [
+                                    'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400&h=320&fit=crop',
+                                  ]
+                              ).map((image, imgIndex) => (
                                 <div key={imgIndex} className="swiper-slide">
                                   <img
                                     src={image}
@@ -432,6 +574,20 @@ function TripPlannerDemo() {
                             <div className="event-title-group">
                               <div className="event-time-badge">
                                 {event.time}
+                                {event.duration &&
+                                  calculateEndTime(
+                                    event.time,
+                                    event.duration
+                                  ) && (
+                                    <>
+                                      {' '}
+                                      -{' '}
+                                      {calculateEndTime(
+                                        event.time,
+                                        event.duration
+                                      )}
+                                    </>
+                                  )}
                               </div>
                               <h4 className="event-title">{event.title}</h4>
                             </div>
@@ -439,7 +595,9 @@ function TripPlannerDemo() {
                           <p className="event-description">
                             {event.description}
                           </p>
-                          {event.tip && (
+
+                          {/* Tips - soportar tanto array como objeto/string */}
+                          {(event.tips || event.tip) && (
                             <div className="event-tip">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -456,14 +614,45 @@ function TripPlannerDemo() {
                               </svg>
                               <div className="event-tip-content">
                                 <div className="event-tip-title">
-                                  {event.tip.title || 'Consejo Pro'}
+                                  Consejos Pro
                                 </div>
                                 <div className="event-tip-text">
-                                  {event.tip.content || event.tip}
+                                  {event.tips ? (
+                                    <ul>
+                                      {event.tips.map((tip, i) => (
+                                        <li key={i}>{tip}</li>
+                                      ))}
+                                    </ul>
+                                  ) : typeof event.tip === 'object' ? (
+                                    event.tip.content || event.tip.title
+                                  ) : (
+                                    event.tip
+                                  )}
                                 </div>
                               </div>
                             </div>
                           )}
+
+                          {/* Tiempo de viaje */}
+                          {event.travelTime && (
+                            <div className="event-travel-time">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                style={{ width: '16px', height: '16px' }}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                                />
+                              </svg>
+                            </div>
+                          )}
+
                           <div className="event-details">
                             <div className="event-detail-item">
                               <svg
@@ -504,7 +693,7 @@ function TripPlannerDemo() {
                                   : event.price.description}
                               </span>
                             </div>
-                            {event.nextTransport && (
+                            {event.travelTime && (
                               <div className="event-detail-item">
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
@@ -520,9 +709,7 @@ function TripPlannerDemo() {
                                   />
                                 </svg>
                                 <span>
-                                  <strong>Siguiente:</strong>{' '}
-                                  {event.nextTransport.duration}{' '}
-                                  {event.nextTransport.description}
+                                  <strong>Siguiente:</strong> {event.travelTime}
                                 </span>
                               </div>
                             )}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import AOS from 'aos';
 import flatpickr from 'flatpickr';
 import { Spanish } from 'flatpickr/dist/l10n/es.js';
@@ -6,12 +6,16 @@ import 'aos/dist/aos.css';
 import 'flatpickr/dist/flatpickr.min.css';
 import 'flatpickr/dist/themes/material_blue.css';
 import './LandingPage.css';
+import { generateWithFallback } from '../services/tripAiServiceOptimized';
 
 function LandingPage() {
   const startDateRef = useRef(null);
   const endDateRef = useRef(null);
   const startDatePickerRef = useRef(null);
   const endDatePickerRef = useRef(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
 
   useEffect(() => {
     // Initialize AOS
@@ -62,10 +66,15 @@ function LandingPage() {
     };
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
 
-    // Get form values
+    console.log('\n[LANDING] ========== FORM SUBMISSION ==========');
+    setSubmitting(true);
+    setProgress(0);
+    setProgressMessage('Iniciando generación optimizada...');
+
     const formData = {
       destination: e.target.destination.value,
       startDate: e.target.startDate.value,
@@ -74,19 +83,99 @@ function LandingPage() {
       intensity: e.target.intensity.value,
     };
 
-    // Store in sessionStorage for use in results page
-    sessionStorage.setItem('travelPreferences', JSON.stringify(formData));
+    console.log('[LANDING] Form data:', formData);
 
-    // Add loading animation to button
+    // Visual feedback
     const btn = e.target.querySelector('.submit-btn');
-    btn.innerHTML = '✨ Creando tu viaje perfecto...';
-    btn.style.opacity = '0.8';
+    const original = btn.innerHTML;
 
-    // Trigger navigation to planner after short delay
-    setTimeout(() => {
-      sessionStorage.setItem('navigateToPlanner', 'true');
-      window.dispatchEvent(new Event('storage'));
-    }, 1500);
+    try {
+      // Usar la generación optimizada con fallback automático
+      console.log('[LANDING] Calling generateWithFallback...');
+      const result = await generateWithFallback(formData, (update) => {
+        // Actualizar progreso en tiempo real
+        console.log('[LANDING] Progress update:', update);
+
+        if (update.progress !== undefined) {
+          setProgress(update.progress);
+        }
+
+        switch (update.type) {
+          case 'start':
+            setProgressMessage(`Analizando ${update.data.destination}...`);
+            btn.innerHTML = `✨ Analizando ${update.data.destination}...`;
+            break;
+          case 'summary':
+            setProgressMessage('Generando resumen del viaje...');
+            btn.innerHTML = '✨ Generando resumen...';
+            break;
+          case 'hotels':
+            setProgressMessage('Seleccionando hoteles...');
+            btn.innerHTML = '✨ Seleccionando hoteles...';
+            break;
+          case 'day':
+            setProgressMessage(`Planificando día ${update.data.day}...`);
+            btn.innerHTML = `✨ Planificando día ${update.data.day}...`;
+            break;
+          case 'complete':
+            setProgressMessage('¡Viaje generado!');
+            btn.innerHTML = '✨ ¡Completado!';
+            break;
+          default:
+            break;
+        }
+      });
+
+      console.log('[LANDING] Generation result:', {
+        ok: result.ok,
+        fallback: result.fallback,
+      });
+
+      if (result.ok && result.data) {
+        console.log(
+          '[LANDING] ✓ Trip data received, storing and navigating...'
+        );
+        sessionStorage.setItem('aiTripData', JSON.stringify(result.data));
+        sessionStorage.setItem('travelPreferences', JSON.stringify(formData));
+
+        if (result.fallback) {
+          console.warn(
+            '[LANDING] ⚠ Using fallback mock data due to AI failure'
+          );
+          setProgressMessage('Usando datos de ejemplo (IA no disponible)');
+        } else if (result.cached) {
+          console.log('[LANDING] ℹ Using cached response');
+          setProgressMessage('¡Viaje recuperado de caché!');
+        } else {
+          setProgressMessage('¡Viaje generado con éxito!');
+        }
+
+        setTimeout(() => {
+          console.log('[LANDING] Triggering navigation to planner...');
+          sessionStorage.setItem('navigateToPlanner', 'true');
+          window.dispatchEvent(new Event('storage'));
+        }, 500);
+      } else {
+        console.error('[LANDING] ✗ Generation failed:', result.error);
+        alert(
+          'No se pudo generar el viaje. Intentaremos con datos de ejemplo.\nDetalle: ' +
+            (result.error || 'desconocido')
+        );
+        // Fallback a navegación sin datos AI
+        sessionStorage.removeItem('aiTripData');
+        sessionStorage.setItem('travelPreferences', JSON.stringify(formData));
+        sessionStorage.setItem('navigateToPlanner', 'true');
+        window.dispatchEvent(new Event('storage'));
+      }
+    } catch (err) {
+      console.error('[LANDING] ✗✗✗ CRITICAL ERROR:', err);
+      alert('Ocurrió un error al generar el viaje: ' + String(err));
+      btn.innerHTML = original;
+      btn.style.opacity = '1';
+    } finally {
+      console.log('[LANDING] ========== SUBMISSION COMPLETE ==========\n');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -277,8 +366,15 @@ function LandingPage() {
               </div>
             </div>
 
-            <button type="submit" className="submit-btn">
-              ✨ Planear mi viaje
+            <button type="submit" className="submit-btn" disabled={submitting}>
+              {submitting
+                ? progressMessage || '✨ Generando...'
+                : '✨ Planear mi viaje'}
+              {submitting && progress > 0 && (
+                <span style={{ fontSize: '0.85em', marginLeft: '8px' }}>
+                  ({Math.round(progress)}%)
+                </span>
+              )}
             </button>
           </form>
 
