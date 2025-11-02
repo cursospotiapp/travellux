@@ -180,6 +180,14 @@ class SmartPOIService {
       // ❌ ELIMINADO: Las búsquedas de restaurantes saturan la API de Overpass
       // TODO: Implementar con caché local o usar API de Google Places
 
+      // 🔥 STEP 6: Obtener imágenes SOLO de los POIs seleccionados
+      console.log('[SMART-POI] STEP 6: Fetching images for selected POIs...');
+      const allSelectedPOIs = Object.values(dayByDay).flatMap(
+        (day) => day.pois
+      );
+      const { enrichPOIsWithImages } = await import('./overpassService.js');
+      await enrichPOIsWithImages(allSelectedPOIs);
+
       const totalAssigned = Object.values(dayByDay).reduce(
         (sum, day) => sum + day.poisCount,
         0

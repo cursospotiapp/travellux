@@ -12,6 +12,86 @@ const TIMEOUT = parseInt(process.env.OVERPASS_TIMEOUT) || 180000; // 3 minutos
 const MAX_RETRIES = parseInt(process.env.OVERPASS_MAX_RETRIES) || 3;
 
 /**
+ * Obtiene MÚLTIPLES imágenes de Wikipedia para un POI específico
+ * @param {string} wikipediaUrl - URL de Wikipedia (ej: "es:Plaza_Mayor_(Madrid)")
+ * @returns {Promise<Array<string>>} Array de URLs de imágenes (máximo 2)
+ */
+async function fetchWikipediaImages(wikipediaUrl) {
+  if (!wikipediaUrl) return [];
+
+  try {
+    const parts = wikipediaUrl.split(':');
+    if (parts.length !== 2) return [];
+
+    const lang = parts[0];
+    const title = parts[1];
+
+    // Obtener imágenes del artículo (pageimages da la principal + images da todas)
+    const apiUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
+      title
+    )}&prop=pageimages|images&piprop=original&imlimit=5&format=json&formatversion=2`;
+
+    const response = await axios.get(apiUrl, {
+      timeout: 5000,
+      headers: { 'User-Agent': 'TripPlanner/1.0' },
+    });
+
+    const pageData = response.data?.query?.pages?.[0];
+    const images = [];
+
+    // 1. Imagen principal (pageimages)
+    if (pageData?.original?.source) {
+      images.push(pageData.original.source);
+    }
+
+    // 2. Intentar obtener una segunda imagen de la lista de imágenes del artículo
+    if (pageData?.images && pageData.images.length > 0) {
+      for (const img of pageData.images) {
+        const imgTitle = img.title;
+
+        // Filtrar imágenes comunes que no queremos (logos, iconos, etc)
+        if (
+          imgTitle.includes('Commons-logo') ||
+          imgTitle.includes('Wikidata') ||
+          imgTitle.includes('Wikimedia') ||
+          imgTitle.includes('Logo') ||
+          imgTitle.includes('Icon') ||
+          imgTitle.includes('.svg')
+        ) {
+          continue;
+        }
+
+        // Obtener URL de esta imagen
+        try {
+          const imgUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
+            imgTitle
+          )}&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&formatversion=2`;
+
+          const imgResponse = await axios.get(imgUrl, {
+            timeout: 3000,
+            headers: { 'User-Agent': 'TripPlanner/1.0' },
+          });
+
+          const imgData = imgResponse.data?.query?.pages?.[0];
+          const imgSourceUrl = imgData?.imageinfo?.[0]?.url;
+
+          if (imgSourceUrl && !images.includes(imgSourceUrl)) {
+            images.push(imgSourceUrl);
+            break; // Solo queremos 2 imágenes máximo
+          }
+        } catch (err) {
+          // Continuar con la siguiente imagen
+        }
+      }
+    }
+
+    return images.slice(0, 2); // Máximo 2 imágenes
+  } catch (error) {
+    return [];
+  }
+}
+
+/**
  * Obtiene extracto REAL de Wikipedia SIEMPRE EN ESPAÑOL
  * @param {string} wikipediaUrl - URL de Wikipedia (ej: "es:Plaza_Mayor_(Madrid)" o "it:Colosseo")
  * @returns {Promise<Object|null>} {extract: string, image: string} o null
@@ -481,8 +561,8 @@ export async function fetchPOIsFromCity(cityName, options = {}) {
 
     console.log(`[OSM] ✓ Found ${pois.length} POIs for ${cityName}`);
 
-    // 🔥 ENRIQUECER CON DESCRIPCIONES REALES DE WIKIPEDIA
-    console.log('[WIKIPEDIA] Enriching POIs with real descriptions...');
+    // 🔥 ENRIQUECER SOLO CON DESCRIPCIONES (SIN IMÁGENES TODAVÍA)
+    console.log('[WIKIPEDIA] Enriching POIs with descriptions and tips...');
 
     const BATCH_SIZE = 5; // Máximo 5 requests paralelos
     for (let i = 0; i < Math.min(pois.length, limit); i += BATCH_SIZE) {
@@ -492,10 +572,14 @@ export async function fetchPOIsFromCity(cityName, options = {}) {
         batch.map(async (poi) => {
           if (poi.wikipedia) {
             try {
-              // Obtener descripción
-              const extract = await fetchWikipediaExtract(poi.wikipedia);
-              if (extract && extract.length > 50) {
-                poi.wikipediaDescription = extract;
+              // Obtener SOLO descripción (sin imagen todavía)
+              const wikiData = await fetchWikipediaExtract(poi.wikipedia);
+              if (
+                wikiData &&
+                wikiData.extract &&
+                wikiData.extract.length > 50
+              ) {
+                poi.wikipediaDescription = wikiData.extract;
               }
 
               // Obtener información práctica (horarios, precios, etc.)
@@ -519,6 +603,9 @@ export async function fetchPOIsFromCity(cityName, options = {}) {
     ).length;
     console.log(
       `[WIKIPEDIA] ✓ Enriched ${enrichedCount}/${pois.length} POIs with descriptions`
+    );
+    console.log(
+      `[WIKIPEDIA] ✓ Added practical tips to ${tipsCount}/${pois.length} POIs`
     );
     console.log(
       `[WIKIPEDIA] ✓ Added practical tips to ${tipsCount}/${pois.length} POIs`
@@ -1214,10 +1301,49 @@ export async function getPOIDetails(osmId) {
   }
 }
 
+/**
+ * Obtiene imágenes de Wikipedia para una lista de POIs seleccionados
+ * @param {Array} pois - Array de POIs con campo 'wikipedia'
+ * @returns {Promise<void>} Modifica los POIs añadiendo campo 'wikipediaImages' (array)
+ */
+export async function enrichPOIsWithImages(pois) {
+  console.log(
+    `[WIKIPEDIA] Fetching images for ${pois.length} selected POIs...`
+  );
+
+  const BATCH_SIZE = 3; // Reducido a 3 porque ahora hacemos más llamadas por POI
+  let poisWithImages = 0;
+  let totalImages = 0;
+
+  for (let i = 0; i < pois.length; i += BATCH_SIZE) {
+    const batch = pois.slice(i, i + BATCH_SIZE);
+
+    await Promise.all(
+      batch.map(async (poi) => {
+        if (poi.wikipedia) {
+          const images = await fetchWikipediaImages(poi.wikipedia);
+          if (images.length > 0) {
+            poi.wikipediaImages = images;
+            poisWithImages++;
+            totalImages += images.length;
+          }
+        }
+      })
+    );
+  }
+
+  console.log(
+    `[WIKIPEDIA] ✓ Added ${totalImages} images to ${poisWithImages}/${
+      pois.length
+    } POIs (avg: ${(totalImages / poisWithImages).toFixed(1)} per POI)`
+  );
+}
+
 export default {
   fetchPOIsFromCity,
   findNearbyRestaurants,
   getPOIDetails,
   searchLandmarkByName,
   searchMultipleLandmarks,
+  enrichPOIsWithImages,
 };

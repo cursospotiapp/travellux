@@ -334,105 +334,9 @@ app.post('/api/generate-trip-fast', async (req, res) => {
         return poi.wikipediaDescription;
       }
 
-      // PRIORIDAD 2: Generar descripción básica con datos disponibles
-      const name = poi.name;
-      const type = poi.type?.toLowerCase() || 'attraction';
-      const tags = poi.rawTags || {};
-
-      // Extraer información REAL del POI
-      const hasWikipedia = !!poi.wikipedia;
-      const wikipediaLangs = Object.keys(tags).filter((k) =>
-        k.startsWith('wikipedia:')
-      ).length;
-      const heritage = tags.heritage || tags['heritage:operator'];
-      const architect = tags.architect;
-      const buildingDate = tags['start_date'] || tags['building:date'];
-      const website = poi.website || tags.website;
-
-      // GENERAR DESCRIPCIÓN DINÁMICA CON DATOS REALES
-      let parts = [];
-
-      // Parte 1: Introducción con tipo específico
-      const typeIntros = {
-        museum: `un museo de referencia en ${destination}`,
-        monument: `un monumento histórico emblemático de ${destination}`,
-        palace: `un palacio histórico que refleja el esplendor arquitectónico de ${destination}`,
-        cathedral: `una catedral que domina el paisaje religioso y cultural de ${destination}`,
-        church: `una iglesia de gran valor histórico y artístico en ${destination}`,
-        park: `un parque que ofrece un oasis verde en pleno corazón de ${destination}`,
-        castle: `un castillo que ha sido testigo de la historia de ${destination}`,
-        plaza: `una plaza emblemática que forma parte del alma de ${destination}`,
-        square: `una plaza histórica fundamental en el tejido urbano de ${destination}`,
-        theatre: `un teatro histórico que ha sido escenario cultural de ${destination}`,
-        attraction: `una atracción imprescindible para conocer ${destination}`,
-      };
-
-      parts.push(
-        `${name} es ${
-          typeIntros[type] || `un lugar destacado en ${destination}`
-        }.`
-      );
-
-      // Parte 2: Información de Wikipedia (si existe)
-      if (wikipediaLangs > 5) {
-        parts.push(
-          `Con presencia en ${wikipediaLangs} idiomas de Wikipedia, su relevancia internacional está más que demostrada.`
-        );
-      } else if (hasWikipedia) {
-        parts.push(
-          `Su importancia histórica está documentada internacionalmente.`
-        );
-      }
-
-      // Parte 3: Información de patrimonio
-      if (heritage) {
-        parts.push(
-          `Este lugar está reconocido como patrimonio cultural protegido.`
-        );
-      }
-
-      // Parte 4: Fecha de construcción
-      if (buildingDate) {
-        parts.push(
-          `Construido en ${buildingDate}, conserva elementos arquitectónicos originales.`
-        );
-      }
-
-      // Parte 5: Arquitecto
-      if (architect) {
-        parts.push(
-          `La obra del arquitecto ${architect} se aprecia en cada detalle.`
-        );
-      }
-
-      // Parte 6: Recomendaciones específicas por tipo
-      const typeRecommendations = {
-        museum: 'Dedica al menos 2 horas para recorrer sus salas principales.',
-        monument:
-          'Las mejores fotografías se obtienen durante las primeras horas de la mañana.',
-        palace: 'Se recomienda la visita guiada para comprender su historia.',
-        cathedral:
-          'Si es posible, sube a la torre para disfrutar de vistas panorámicas.',
-        church: 'Visita con respeto, manteniendo el silencio.',
-        park: 'Ideal para un paseo relajado o un picnic.',
-        castle:
-          'Explora tanto las murallas exteriores como las salas interiores.',
-        plaza: 'El ambiente cambia según la hora del día.',
-        theatre: 'Consulta la programación de eventos.',
-        attraction: 'Comprueba los horarios de apertura.',
-      };
-
-      parts.push(
-        typeRecommendations[type] ||
-          'Un lugar que merece ser incluido en tu itinerario.'
-      );
-
-      // Parte 7: Información web
-      if (website) {
-        parts.push(`Consulta horarios y precios en su sitio web oficial.`);
-      }
-
-      return parts.join(' ');
+      // ❌ SI NO HAY DESCRIPCIÓN DE WIKIPEDIA, DEVOLVER NOMBRE SIMPLE
+      // Mejor vacío que basura genérica
+      return `${poi.name} - ${destination}`;
     };
 
     // Helper para generar tips DINÁMICOS basados en el POI
@@ -572,7 +476,10 @@ app.post('/api/generate-trip-fast', async (req, res) => {
             amount: poi.price || 15,
             currency: 'EUR',
           },
-          images: poi.images || ['https://placehold.co/600x400'],
+          images:
+            poi.wikipediaImages && poi.wikipediaImages.length > 0
+              ? poi.wikipediaImages
+              : ['https://placehold.co/600x400'],
           tips: generateSpanishTips(poi),
           travelTime: travelTime,
         };
