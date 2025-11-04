@@ -41,6 +41,24 @@ function LandingPage() {
       locale: Spanish,
       minDate: 'today',
       dateFormat: 'd/m/Y',
+      onChange: function (selectedDates, dateStr) {
+        // Validar que no se excedan 15 días
+        const startDate = startDatePickerRef.current.selectedDates[0];
+        const endDate = selectedDates[0];
+
+        if (startDate && endDate) {
+          const diffTime = Math.abs(endDate - startDate);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays > 15) {
+            // Mostrar alerta y limpiar fecha
+            alert(
+              '⚠️ El viaje no puede superar los 15 días. Por favor, selecciona una fecha de fin más cercana.'
+            );
+            endDatePickerRef.current.clear();
+          }
+        }
+      },
     });
 
     // Add smooth hover effect to form inputs

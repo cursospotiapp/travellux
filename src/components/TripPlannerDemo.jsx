@@ -42,12 +42,32 @@ function calculateEndTime(startTime, duration) {
   )}`;
 }
 
+// Paleta de colores expandida para hasta 15 días diferentes
+const DAY_COLORS = [
+  '#d4af37', // Dorado
+  '#4299e1', // Azul
+  '#48bb78', // Verde
+  '#ed8936', // Naranja
+  '#9f7aea', // Púrpura
+  '#f56565', // Rojo
+  '#38b2ac', // Teal
+  '#e53e3e', // Rojo intenso
+  '#805ad5', // Morado
+  '#dd6b20', // Naranja quemado
+  '#319795', // Cian
+  '#d69e2e', // Amarillo mostaza
+  '#e91e63', // Rosa
+  '#2c7a7b', // Verde azulado
+  '#744210', // Marrón
+];
+
 function TripPlannerDemo() {
   const [tripData, setTripData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mapVisible, setMapVisible] = useState(false);
   const [currentDay, setCurrentDay] = useState(null);
+  const [activeDayIndex, setActiveDayIndex] = useState(0);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -182,6 +202,30 @@ function TripPlannerDemo() {
     };
   }, [tripData]);
 
+  // Detect active day based on scroll position
+  useEffect(() => {
+    if (!tripData) return;
+
+    const handleScroll = () => {
+      const daySections = document.querySelectorAll('.itinerary-day');
+      const scrollPosition = window.scrollY + window.innerHeight / 3;
+
+      daySections.forEach((section, index) => {
+        const sectionTop = section.offsetTop;
+        const sectionBottom = sectionTop + section.offsetHeight;
+
+        if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+          setActiveDayIndex(index);
+        }
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial check
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [tripData]);
+
   const openMap = (dayIndex, eventIndexToOpen = null) => {
     setMapVisible(true);
     setCurrentDay(dayIndex);
@@ -244,15 +288,7 @@ function TripPlannerDemo() {
               event.location.coordinates.lng,
             ];
 
-            // Color diferente para cada día
-            const dayColors = [
-              '#d4af37',
-              '#4299e1',
-              '#48bb78',
-              '#ed8936',
-              '#9f7aea',
-            ];
-            const markerColor = dayColors[(dayNum - 1) % dayColors.length];
+            const markerColor = DAY_COLORS[(dayNum - 1) % DAY_COLORS.length];
 
             const markerIcon = L.divIcon({
               className: 'custom-marker-wrapper',
@@ -302,14 +338,7 @@ function TripPlannerDemo() {
 
         if (dayLatLngs.length > 1) {
           for (let i = 0; i < dayLatLngs.length - 1; i++) {
-            const dayColors = [
-              '#d4af37',
-              '#4299e1',
-              '#48bb78',
-              '#ed8936',
-              '#9f7aea',
-            ];
-            const lineColor = dayColors[(dayNum - 1) % dayColors.length];
+            const lineColor = DAY_COLORS[(dayNum - 1) % DAY_COLORS.length];
 
             const line = L.polyline([dayLatLngs[i], dayLatLngs[i + 1]], {
               color: lineColor,
@@ -783,6 +812,56 @@ function TripPlannerDemo() {
           <div id="map" ref={mapRef}></div>
         </div>
       </div>
+
+      {/* Mini Day Navigator - Fixed Bottom Right */}
+      {tripData && (
+        <div className="day-navigator">
+          <div className="day-navigator-header">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            <span>Días</span>
+          </div>
+          <div className="day-navigator-list">
+            {Object.entries(tripData.itinerary).map(([dayKey, day], index) => {
+              const dayNum = index + 1;
+              const isActive = activeDayIndex === index;
+              return (
+                <button
+                  key={dayKey}
+                  className={`day-nav-item ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    const dayElement =
+                      document.querySelectorAll('.itinerary-day')[index];
+                    if (dayElement) {
+                      dayElement.scrollIntoView({
+                        behavior: 'auto',
+                        block: 'start',
+                      });
+                    }
+                  }}
+                  title={`Día ${dayNum}${day.title ? `: ${day.title}` : ''}`}
+                >
+                  <span className="day-nav-number">{dayNum}</span>
+                  <span className="day-nav-count">
+                    {day.events?.length || 0}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
