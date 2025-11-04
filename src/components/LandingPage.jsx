@@ -197,222 +197,303 @@ function LandingPage() {
   };
 
   return (
-    <div className="hero">
-      <div className="floating-element"></div>
-      <div className="floating-element"></div>
+    <div>
+      {/* LOADING OVERLAY WITH PREMIUM FOG EFFECT */}
+      {submitting && (
+        <div className="loading-overlay active">
+          <div className="fog-background">
+            <div className="fog-particle"></div>
+            <div className="fog-particle"></div>
+            <div className="fog-particle"></div>
+            <div className="fog-particle"></div>
 
-      <div className="hero-content">
-        <h1 className="logo" data-aos="fade-down" data-aos-duration="1000">
-          TravelLux
-        </h1>
-        <p
-          className="tagline"
-          data-aos="fade-up"
-          data-aos-duration="1000"
-          data-aos-delay="200"
-        >
-          Experiencias de viaje personalizadas y exclusivas
-        </p>
-
-        <div
-          className="form-container"
-          data-aos="fade-up"
-          data-aos-duration="1000"
-          data-aos-delay="400"
-        >
-          <h2 className="form-title">Planifica tu viaje perfecto</h2>
-          <p className="form-subtitle">
-            Cuéntanos tus preferencias y crearemos un itinerario único para ti
-          </p>
-
-          <form id="travelForm" className="form-grid" onSubmit={handleSubmit}>
-            {/* Destino */}
-            <div className="form-group">
-              <label className="form-label">¿A dónde quieres viajar?</label>
-              <input
-                type="text"
-                className="form-input"
-                name="destination"
-                id="destination"
-                placeholder="Ej: París, Francia"
-                required
+            <div className="images-carousel">
+              <img
+                src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=300&q=80"
+                alt="París"
+                className="carousel-image"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&q=80"
+                alt="Montañas"
+                className="carousel-image"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=300&q=80"
+                alt="Playa tropical"
+                className="carousel-image"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80"
+                alt="Océano"
+                className="carousel-image"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1518066000714-58c45f1b773c?w=300&q=80"
+                alt="Montaña nevada"
+                className="carousel-image"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1519046904884-53103b34b206?w=300&q=80"
+                alt="Desierto"
+                className="carousel-image"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=300&q=80"
+                alt="Bosque"
+                className="carousel-image"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1512453475622-480c2ba46897?w=300&q=80"
+                alt="Atardecer"
+                className="carousel-image"
               />
             </div>
+          </div>
 
-            {/* Fechas */}
-            <div className="form-group">
-              <label className="form-label">Fechas del viaje</label>
-              <div className="date-grid">
+          <div className="loading-content">
+            <h2 className="loading-title">✨ TravelLux</h2>
+            <p className="loading-subtitle">
+              {progressMessage ||
+                'Estamos buscando los mejores lugares para tu viaje de ensueño...'}
+            </p>
+
+            <div className="progress-container">
+              <div className="progress-ring">
+                <div className="progress-spinner"></div>
+              </div>
+              <div className="floating-dots">
+                <div className="dot"></div>
+                <div className="dot"></div>
+                <div className="dot"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="hero">
+        <div className="floating-element"></div>
+        <div className="floating-element"></div>
+
+        <div className="hero-content">
+          <h1 className="logo" data-aos="fade-down" data-aos-duration="1000">
+            TravelLux
+          </h1>
+          <p
+            className="tagline"
+            data-aos="fade-up"
+            data-aos-duration="1000"
+            data-aos-delay="200"
+          >
+            Experiencias de viaje personalizadas y exclusivas
+          </p>
+
+          <div
+            className="form-container"
+            data-aos="fade-up"
+            data-aos-duration="1000"
+            data-aos-delay="400"
+          >
+            <h2 className="form-title">Planifica tu viaje perfecto</h2>
+            <p className="form-subtitle">
+              Cuéntanos tus preferencias y crearemos un itinerario único para ti
+            </p>
+
+            <form id="travelForm" className="form-grid" onSubmit={handleSubmit}>
+              {/* Destino */}
+              <div className="form-group">
+                <label className="form-label">¿A dónde quieres viajar?</label>
                 <input
                   type="text"
                   className="form-input"
-                  name="startDate"
-                  id="startDate"
-                  ref={startDateRef}
-                  placeholder="Fecha de inicio"
-                  required
-                />
-                <input
-                  type="text"
-                  className="form-input"
-                  name="endDate"
-                  id="endDate"
-                  ref={endDateRef}
-                  placeholder="Fecha de fin"
+                  name="destination"
+                  id="destination"
+                  placeholder="Ej: París, Francia"
                   required
                 />
               </div>
-            </div>
 
-            {/* Presupuesto */}
-            <div className="form-group">
-              <label className="form-label">Presupuesto del viaje</label>
-              <div className="select-group">
-                <div className="select-option">
+              {/* Fechas */}
+              <div className="form-group">
+                <label className="form-label">Fechas del viaje</label>
+                <div className="date-grid">
                   <input
-                    type="radio"
-                    name="budget"
-                    id="budget-low"
-                    value="low"
+                    type="text"
+                    className="form-input"
+                    name="startDate"
+                    id="startDate"
+                    ref={startDateRef}
+                    placeholder="Fecha de inicio"
                     required
                   />
-                  <label htmlFor="budget-low" className="select-label">
-                    <div className="select-icon">💰</div>
-                    <div className="select-text">Económico</div>
-                    <div className="select-description">Hasta €500/día</div>
-                  </label>
-                </div>
-                <div className="select-option">
                   <input
-                    type="radio"
-                    name="budget"
-                    id="budget-medium"
-                    value="medium"
-                  />
-                  <label htmlFor="budget-medium" className="select-label">
-                    <div className="select-icon">💳</div>
-                    <div className="select-text">Medio</div>
-                    <div className="select-description">€500-1000/día</div>
-                  </label>
-                </div>
-                <div className="select-option">
-                  <input
-                    type="radio"
-                    name="budget"
-                    id="budget-high"
-                    value="high"
-                  />
-                  <label htmlFor="budget-high" className="select-label">
-                    <div className="select-icon">💎</div>
-                    <div className="select-text">Alto</div>
-                    <div className="select-description">€1000-2000/día</div>
-                  </label>
-                </div>
-                <div className="select-option">
-                  <input
-                    type="radio"
-                    name="budget"
-                    id="budget-luxury"
-                    value="luxury"
-                  />
-                  <label htmlFor="budget-luxury" className="select-label">
-                    <div className="select-icon">👑</div>
-                    <div className="select-text">Lujo</div>
-                    <div className="select-description">+€2000/día</div>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Intensidad */}
-            <div className="form-group">
-              <label className="form-label">Ritmo del viaje</label>
-              <div className="select-group">
-                <div className="select-option">
-                  <input
-                    type="radio"
-                    name="intensity"
-                    id="intensity-wellness"
-                    value="wellness"
+                    type="text"
+                    className="form-input"
+                    name="endDate"
+                    id="endDate"
+                    ref={endDateRef}
+                    placeholder="Fecha de fin"
                     required
                   />
-                  <label htmlFor="intensity-wellness" className="select-label">
-                    <div className="select-icon">🧘</div>
-                    <div className="select-text">Wellness</div>
-                    <div className="select-description">Spa y relax</div>
-                  </label>
-                </div>
-                <div className="select-option">
-                  <input
-                    type="radio"
-                    name="intensity"
-                    id="intensity-relaxed"
-                    value="relaxed"
-                  />
-                  <label htmlFor="intensity-relaxed" className="select-label">
-                    <div className="select-icon">☕</div>
-                    <div className="select-text">Relajado</div>
-                    <div className="select-description">Cafés y paseos</div>
-                  </label>
-                </div>
-                <div className="select-option">
-                  <input
-                    type="radio"
-                    name="intensity"
-                    id="intensity-balanced"
-                    value="balanced"
-                  />
-                  <label htmlFor="intensity-balanced" className="select-label">
-                    <div className="select-icon">🎯</div>
-                    <div className="select-text">Equilibrado</div>
-                    <div className="select-description">Mix perfecto</div>
-                  </label>
-                </div>
-                <div className="select-option">
-                  <input
-                    type="radio"
-                    name="intensity"
-                    id="intensity-active"
-                    value="active"
-                  />
-                  <label htmlFor="intensity-active" className="select-label">
-                    <div className="select-icon">🚶</div>
-                    <div className="select-text">Activo</div>
-                    <div className="select-description">Muchas visitas</div>
-                  </label>
                 </div>
               </div>
-            </div>
 
-            <button type="submit" className="submit-btn" disabled={submitting}>
-              {submitting
-                ? progressMessage || '✨ Generando...'
-                : '✨ Planear mi viaje'}
-              {submitting && progress > 0 && (
-                <span style={{ fontSize: '0.85em', marginLeft: '8px' }}>
-                  ({Math.round(progress)}%)
-                </span>
-              )}
-            </button>
-          </form>
-
-          <div className="features">
-            <div className="feature" data-aos="fade-up" data-aos-delay="600">
-              <div className="feature-icon">🎨</div>
-              <div className="feature-title">Personalizado</div>
-              <div className="feature-text">
-                Itinerarios únicos adaptados a ti
+              {/* Presupuesto */}
+              <div className="form-group">
+                <label className="form-label">Presupuesto del viaje</label>
+                <div className="select-group">
+                  <div className="select-option">
+                    <input
+                      type="radio"
+                      name="budget"
+                      id="budget-low"
+                      value="low"
+                      required
+                    />
+                    <label htmlFor="budget-low" className="select-label">
+                      <div className="select-icon">💰</div>
+                      <div className="select-text">Económico</div>
+                      <div className="select-description">Hasta €500/día</div>
+                    </label>
+                  </div>
+                  <div className="select-option">
+                    <input
+                      type="radio"
+                      name="budget"
+                      id="budget-medium"
+                      value="medium"
+                    />
+                    <label htmlFor="budget-medium" className="select-label">
+                      <div className="select-icon">💳</div>
+                      <div className="select-text">Medio</div>
+                      <div className="select-description">€500-1000/día</div>
+                    </label>
+                  </div>
+                  <div className="select-option">
+                    <input
+                      type="radio"
+                      name="budget"
+                      id="budget-high"
+                      value="high"
+                    />
+                    <label htmlFor="budget-high" className="select-label">
+                      <div className="select-icon">💎</div>
+                      <div className="select-text">Alto</div>
+                      <div className="select-description">€1000-2000/día</div>
+                    </label>
+                  </div>
+                  <div className="select-option">
+                    <input
+                      type="radio"
+                      name="budget"
+                      id="budget-luxury"
+                      value="luxury"
+                    />
+                    <label htmlFor="budget-luxury" className="select-label">
+                      <div className="select-icon">👑</div>
+                      <div className="select-text">Lujo</div>
+                      <div className="select-description">+€2000/día</div>
+                    </label>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="feature" data-aos="fade-up" data-aos-delay="700">
-              <div className="feature-icon">⚡</div>
-              <div className="feature-title">Instantáneo</div>
-              <div className="feature-text">Resultados en segundos</div>
-            </div>
-            <div className="feature" data-aos="fade-up" data-aos-delay="800">
-              <div className="feature-icon">🗺️</div>
-              <div className="feature-title">Completo</div>
-              <div className="feature-text">Vuelos, hoteles e itinerario</div>
+
+              {/* Intensidad */}
+              <div className="form-group">
+                <label className="form-label">Ritmo del viaje</label>
+                <div className="select-group">
+                  <div className="select-option">
+                    <input
+                      type="radio"
+                      name="intensity"
+                      id="intensity-wellness"
+                      value="wellness"
+                      required
+                    />
+                    <label
+                      htmlFor="intensity-wellness"
+                      className="select-label"
+                    >
+                      <div className="select-icon">🧘</div>
+                      <div className="select-text">Wellness</div>
+                      <div className="select-description">Spa y relax</div>
+                    </label>
+                  </div>
+                  <div className="select-option">
+                    <input
+                      type="radio"
+                      name="intensity"
+                      id="intensity-relaxed"
+                      value="relaxed"
+                    />
+                    <label htmlFor="intensity-relaxed" className="select-label">
+                      <div className="select-icon">☕</div>
+                      <div className="select-text">Relajado</div>
+                      <div className="select-description">Cafés y paseos</div>
+                    </label>
+                  </div>
+                  <div className="select-option">
+                    <input
+                      type="radio"
+                      name="intensity"
+                      id="intensity-balanced"
+                      value="balanced"
+                    />
+                    <label
+                      htmlFor="intensity-balanced"
+                      className="select-label"
+                    >
+                      <div className="select-icon">🎯</div>
+                      <div className="select-text">Equilibrado</div>
+                      <div className="select-description">Mix perfecto</div>
+                    </label>
+                  </div>
+                  <div className="select-option">
+                    <input
+                      type="radio"
+                      name="intensity"
+                      id="intensity-active"
+                      value="active"
+                    />
+                    <label htmlFor="intensity-active" className="select-label">
+                      <div className="select-icon">🚶</div>
+                      <div className="select-text">Activo</div>
+                      <div className="select-description">Muchas visitas</div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="submit-btn"
+                disabled={submitting}
+              >
+                {submitting
+                  ? '✨ Generando tu viaje...'
+                  : '✨ Planear mi viaje'}
+              </button>
+            </form>
+
+            <div className="features">
+              <div className="feature" data-aos="fade-up" data-aos-delay="600">
+                <div className="feature-icon">🎨</div>
+                <div className="feature-title">Personalizado</div>
+                <div className="feature-text">
+                  Itinerarios únicos adaptados a ti
+                </div>
+              </div>
+              <div className="feature" data-aos="fade-up" data-aos-delay="700">
+                <div className="feature-icon">⚡</div>
+                <div className="feature-title">Instantáneo</div>
+                <div className="feature-text">Resultados en segundos</div>
+              </div>
+              <div className="feature" data-aos="fade-up" data-aos-delay="800">
+                <div className="feature-icon">🗺️</div>
+                <div className="feature-title">Completo</div>
+                <div className="feature-text">Vuelos, hoteles e itinerario</div>
+              </div>
             </div>
           </div>
         </div>

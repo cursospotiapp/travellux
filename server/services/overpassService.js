@@ -3,8 +3,12 @@
  * 100% gratuito, sin API key necesaria
  */
 
+import dotenv from 'dotenv';
 import axios from 'axios';
 import { isValidCoordinates } from '../utils/geoUtils.js';
+
+// Cargar variables de entorno ANTES de usar process.env
+dotenv.config();
 
 const OVERPASS_ENDPOINT =
   process.env.OVERPASS_ENDPOINT || 'https://overpass-api.de/api/interpreter';
@@ -904,14 +908,21 @@ async function geocodeCityWithNominatim(cityName) {
 
     // Determinar radio según tipo de lugar
     let radius = DEFAULT_RADIUS; // default desde .env
+    console.log(`[GEOCODE] DEFAULT_RADIUS from env: ${DEFAULT_RADIUS}`);
+    console.log(
+      `[GEOCODE] City type: ${result.type}, population: ${result.addressdetails?.population}`
+    );
+
     if (result.type === 'city' && result.addressdetails?.population) {
       const population = parseInt(result.addressdetails.population);
+      console.log(`[GEOCODE] Population parsed: ${population}`);
       if (population > 5000000) radius = 25000; // mega-ciudad
       else if (population > 2000000) radius = 20000; // gran ciudad
       else if (population > 500000) radius = DEFAULT_RADIUS; // ciudad grande
       else radius = 10000; // ciudad pequeña
     }
 
+    console.log(`[GEOCODE] Final radius selected: ${radius}`);
     return { lat, lng, radius };
   } catch (error) {
     if (error.response?.status === 429) {
