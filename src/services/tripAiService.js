@@ -6,7 +6,7 @@
 
 const DEFAULT_API_BASE =
   (typeof window !== 'undefined' && window.AI_API_BASE) ||
-  'http://localhost:8787';
+  'http://localhost:3000';
 
 export async function generateTripWithAI(preferences, exampleTrip) {
   const payload = { preferences, example: exampleTrip };

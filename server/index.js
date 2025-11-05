@@ -834,9 +834,11 @@ ALL text in Spanish. Real coordinates. 3 tips per event.`,
 // START SERVER
 // ============================================================================
 
-app.listen(PORT, () => {
+// SOLUCIÓN: Usar 127.0.0.1 en lugar de 0.0.0.0 para evitar problemas de permisos en Windows
+app.listen(PORT, '127.0.0.1', () => {
   console.log(`\n🚀 ===== TRIP PLANNER API SERVER =====`);
   console.log(`   Port: http://localhost:${PORT}`);
+  console.log(`   Host: 127.0.0.1 (localhost only)`);
   console.log(`   Model: ${MODEL_NAME}`);
   console.log(`\n📍 Available Endpoints:`);
   console.log(`   GET  /api/health - Health check`);

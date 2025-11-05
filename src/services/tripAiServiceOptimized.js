@@ -4,7 +4,7 @@
 
 const API_BASE =
   (typeof window !== 'undefined' && window.AI_API_BASE) ||
-  'http://localhost:8787';
+  'http://localhost:3000';
 
 /**
  * Generación rápida en paralelo (3-5 segundos típicamente)
