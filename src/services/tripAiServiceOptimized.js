@@ -11,16 +11,23 @@ const API_BASE =
  */
 export async function generateTripFast(preferences) {
   console.log('[SERVICE] Starting fast parallel generation...');
+  console.log('[SERVICE] API_BASE:', API_BASE);
+  console.log('[SERVICE] Calling:', `${API_BASE}/api/generate-trip-fast`);
   console.time('generateTripFast');
 
   try {
+    console.log('[SERVICE] Sending POST request...');
     const response = await fetch(`${API_BASE}/api/generate-trip-fast`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ preferences }),
     });
 
+    console.log('[SERVICE] Response status:', response.status);
+    console.log('[SERVICE] Response ok:', response.ok);
+
     const result = await response.json();
+    console.log('[SERVICE] Response parsed:', result);
     console.timeEnd('generateTripFast');
 
     if (result.ok) {
@@ -35,7 +42,10 @@ export async function generateTripFast(preferences) {
     return result;
   } catch (error) {
     console.timeEnd('generateTripFast');
-    console.error('[SERVICE] ✗ Fast generation network error:', error);
+    console.error('[SERVICE] ✗✗✗ FETCH ERROR:', error);
+    console.error('[SERVICE] Error type:', error.constructor.name);
+    console.error('[SERVICE] Error message:', error.message);
+    console.error('[SERVICE] Error stack:', error.stack);
     return { ok: false, error: error.message };
   }
 }
@@ -149,25 +159,17 @@ export async function generateWithFallback(preferences, onProgress) {
     return progressiveResult;
   }
 
-  console.error(
-    '[SERVICE] ⚠⚠ Both AI strategies failed, falling back to local mock data'
-  );
+  console.error('[SERVICE] ⚠⚠ Both AI strategies failed');
+  console.error('[SERVICE] Fast result:', fastResult);
+  console.error('[SERVICE] Progressive result:', progressiveResult);
+  console.log('[SERVICE] ===============================================\n');
 
-  // Intento 3: Datos mock locales
-  console.log('[SERVICE] Strategy 3: Local mock data fallback...');
-  try {
-    const { generateTrip } = await import('../utils/dataHelpers.js');
-    const mockData = generateTrip(preferences);
-    console.log('[SERVICE] ✓ Fallback to local mock successful');
-    console.log('[SERVICE] ===============================================\n');
-    return { ok: true, data: mockData, fallback: true };
-  } catch (error) {
-    console.error('[SERVICE] ✗✗✗ CRITICAL: Even fallback failed:', error);
-    console.log('[SERVICE] ===============================================\n');
-    return {
-      ok: false,
-      error: 'All generation strategies failed',
-      fallback: true,
-    };
-  }
+  // NO MÁS FALLBACK - Devolver el error
+  return {
+    ok: false,
+    error: `Fast generation failed: ${
+      fastResult.error || 'unknown'
+    }. Progressive generation failed: ${progressiveResult.error || 'unknown'}`,
+    fallback: false,
+  };
 }

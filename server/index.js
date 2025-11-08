@@ -4,11 +4,12 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import smartPOIService from './services/smartPOIService.js';
+import smartPOIServiceExpanded from './services/smartPOIServiceExpanded.js';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8787; // backend
+const PORT = process.env.PORT || 3000; // backend
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
 const MODEL_NAME = process.env.MODEL_NAME || 'gemini-1.5-flash';
 
@@ -278,7 +279,8 @@ app.post('/api/generate-trip-fast', async (req, res) => {
 
   try {
     const { preferences } = req.body || {};
-    const { destination, startDate, endDate, intensity } = preferences || {};
+    const { destination, startDate, endDate, intensity, budget } =
+      preferences || {};
 
     console.log('[FAST] Preferences:', JSON.stringify(preferences, null, 2));
 
@@ -301,13 +303,22 @@ app.post('/api/generate-trip-fast', async (req, res) => {
     }
 
     const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-    console.log(`[FAST] Trip: ${days} days, intensity: ${intensity}`);
+    const userBudget = budget || 'medium'; // Para cálculo de precios
+    console.log(
+      `[FAST] Trip: ${days} days, intensity: ${intensity}, budget: ${budget}`
+    );
+
+    // 🔥 SELECCIONAR MÉTODO DE BÚSQUEDA
+    const searchMethod = preferences.searchMethod || 'original'; // 'original' o 'expanded'
+    console.log(`[FAST] Search method: ${searchMethod}`);
 
     // 🔥 OBTENER POIs CON ALGORITMO WIKIPEDIA
-    console.log('[FAST] Fetching Wikipedia POIs...');
+    console.log(`[FAST] Fetching Wikipedia POIs (${searchMethod} method)...`);
     console.time('poi_algorithm');
 
-    const poiResult = await smartPOIService.getPOIsForTrip(destination, {
+    const poiService =
+      searchMethod === 'expanded' ? smartPOIServiceExpanded : smartPOIService;
+    const poiResult = await poiService.getPOIsForTrip(destination, {
       interests: preferences.interests || ['history', 'art'],
       intensity: intensity || 'balanced',
       days: days,
@@ -444,6 +455,7 @@ app.post('/api/generate-trip-fast', async (req, res) => {
       date.setDate(date.getDate() + index);
 
       const events = dayData.pois.map((poi, idx) => {
+        // Variables disponibles en este scope: budget, destination
         // Calcular tiempo AL SIGUIENTE POI (no del anterior)
         let travelTime = '';
         if (idx < dayData.pois.length - 1) {
@@ -459,10 +471,93 @@ app.post('/api/generate-trip-fast', async (req, res) => {
           travelTime = '';
         }
 
+        // 🔥 DURACIÓN DINÁMICA según tipo de POI
+        const tags = poi.rawTags || {};
+        let duration = '2h'; // Por defecto
+
+        if (tags.tourism === 'museum' || tags.building === 'museum') {
+          duration = '2-3h';
+        } else if (
+          tags.tourism === 'gallery' ||
+          tags.amenity === 'arts_centre'
+        ) {
+          duration = '1-2h';
+        } else if (tags.leisure === 'park' || tags.leisure === 'garden') {
+          duration = '1h';
+        } else if (
+          tags.building === 'cathedral' ||
+          tags.building === 'basilica'
+        ) {
+          duration = '1h';
+        } else if (tags.building === 'church' || tags.building === 'chapel') {
+          duration = '30min';
+        } else if (
+          tags.historic === 'monument' ||
+          tags.historic === 'memorial'
+        ) {
+          duration = '30min';
+        } else if (tags.tourism === 'viewpoint' || tags.place === 'square') {
+          duration = '30min';
+        } else if (tags.amenity === 'marketplace' || tags.shop === 'mall') {
+          duration = '1-2h';
+        } else if (tags.amenity === 'theatre') {
+          duration = '2-3h';
+        }
+
+        // 🔥 PRECIO DINÁMICO según tipo de POI y presupuesto
+        let price = 0; // Gratis por defecto
+
+        if (tags.fee === 'no' || tags.charge === 'no') {
+          price = 0; // Entrada gratuita confirmada
+        } else if (tags.tourism === 'museum') {
+          price =
+            userBudget === 'luxury'
+              ? 25
+              : userBudget === 'high'
+              ? 20
+              : userBudget === 'medium'
+              ? 15
+              : 10;
+        } else if (
+          tags.building === 'cathedral' ||
+          tags.building === 'basilica'
+        ) {
+          price = 8;
+        } else if (tags.tourism === 'gallery') {
+          price =
+            userBudget === 'luxury'
+              ? 18
+              : userBudget === 'high'
+              ? 15
+              : userBudget === 'medium'
+              ? 12
+              : 8;
+        } else if (tags.amenity === 'theatre') {
+          price =
+            userBudget === 'luxury'
+              ? 60
+              : userBudget === 'high'
+              ? 45
+              : userBudget === 'medium'
+              ? 30
+              : 20;
+        } else if (tags.tourism === 'attraction' && tags.fee !== 'no') {
+          price =
+            userBudget === 'luxury'
+              ? 20
+              : userBudget === 'high'
+              ? 15
+              : userBudget === 'medium'
+              ? 10
+              : 5;
+        } else if (tags.leisure === 'park' || tags.leisure === 'garden') {
+          price = 0; // Parques generalmente gratis
+        }
+
         return {
           id: `evt-${index + 1}-${idx + 1}`,
           time: `${9 + idx * 2}:00`,
-          duration: '2h',
+          duration: duration,
           title: poi.name,
           description: generateSpanishDescription(poi),
           type: poi.type || 'Atracción',
@@ -472,7 +567,7 @@ app.post('/api/generate-trip-fast', async (req, res) => {
             coordinates: poi.coordinates,
           },
           price: {
-            amount: poi.price || 15,
+            amount: price,
             currency: 'EUR',
           },
           images:

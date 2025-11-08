@@ -110,10 +110,21 @@ function TripPlannerDemo() {
         }
       }
 
-      // Prioridad 3: Datos de ejemplo por defecto
+      // 🔥 SI NO HAY DATOS: Redirigir a la landing page
       if (!trip) {
-        console.log('📦 Using example trip data (full 3 days)');
-        trip = exampleTrip;
+        console.warn('⚠️  No trip data found. Redirecting to landing page...');
+        console.log('� Please generate a trip first from the landing page.');
+
+        // Mostrar mensaje antes de redirigir
+        setError(
+          'No hay viaje generado. Redirigiendo a la página principal...'
+        );
+
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+
+        return; // Salir del useEffect
       }
 
       console.log('🚀 Trip Data Loaded:', trip);

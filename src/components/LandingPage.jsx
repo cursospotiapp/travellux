@@ -99,6 +99,7 @@ function LandingPage() {
       endDate: e.target.endDate.value,
       budget: e.target.budget.value,
       intensity: e.target.intensity.value,
+      searchMethod: e.target.searchMethod?.value || 'original', // 'original' o 'expanded'
     };
 
     console.log('[LANDING] Form data:', formData);
@@ -156,12 +157,7 @@ function LandingPage() {
         sessionStorage.setItem('aiTripData', JSON.stringify(result.data));
         sessionStorage.setItem('travelPreferences', JSON.stringify(formData));
 
-        if (result.fallback) {
-          console.warn(
-            '[LANDING] ⚠ Using fallback mock data due to AI failure'
-          );
-          setProgressMessage('Usando datos de ejemplo (IA no disponible)');
-        } else if (result.cached) {
+        if (result.cached) {
           console.log('[LANDING] ℹ Using cached response');
           setProgressMessage('¡Viaje recuperado de caché!');
         } else {
@@ -174,16 +170,33 @@ function LandingPage() {
           window.dispatchEvent(new Event('storage'));
         }, 500);
       } else {
-        console.error('[LANDING] ✗ Generation failed:', result.error);
-        alert(
-          'No se pudo generar el viaje. Intentaremos con datos de ejemplo.\nDetalle: ' +
-            (result.error || 'desconocido')
-        );
-        // Fallback a navegación sin datos AI
-        sessionStorage.removeItem('aiTripData');
-        sessionStorage.setItem('travelPreferences', JSON.stringify(formData));
-        sessionStorage.setItem('navigateToPlanner', 'true');
-        window.dispatchEvent(new Event('storage'));
+        console.error('[LANDING] ✗✗✗ GENERATION FAILED');
+        console.error('[LANDING] Result:', result);
+        console.error('[LANDING] Error:', result.error);
+
+        // MOSTRAR ERROR COMPLETO AL USUARIO
+        const errorMsg = `
+ERROR AL GENERAR VIAJE:
+${result.error || 'Desconocido'}
+
+DETALLES TÉCNICOS:
+- Destino: ${formData.destination}
+- Fechas: ${formData.startDate} a ${formData.endDate}
+- Método: ${formData.searchMethod}
+
+Por favor revisa:
+1. ¿Está el servidor backend corriendo? (http://localhost:3000)
+2. ¿Hay errores en la consola del navegador? (F12)
+3. ¿Hay errores en la consola del servidor?
+        `;
+
+        alert(errorMsg);
+
+        // NO NAVEGAR - mantener en la landing page
+        btn.innerHTML = original;
+        btn.style.opacity = '1';
+        setSubmitting(false);
+        return; // IMPORTANTE: no continuar
       }
     } catch (err) {
       console.error('[LANDING] ✗✗✗ CRITICAL ERROR:', err);
@@ -462,6 +475,66 @@ function LandingPage() {
                       <div className="select-description">Muchas visitas</div>
                     </label>
                   </div>
+                </div>
+              </div>
+
+              {/* Método de búsqueda de POIs */}
+              <div className="form-group">
+                <label className="form-label">
+                  Método de búsqueda de lugares
+                  <span className="form-label-subtitle">
+                    Elige cómo quieres explorar la ciudad
+                  </span>
+                </label>
+                <div className="select-group">
+                  <div className="select-option">
+                    <input
+                      type="radio"
+                      name="searchMethod"
+                      id="search-original"
+                      value="original"
+                      defaultChecked
+                    />
+                    <label htmlFor="search-original" className="select-label">
+                      <div className="select-icon">🏛️</div>
+                      <div className="select-text">Clásico</div>
+                      <div className="select-description">
+                        Monumentos principales
+                      </div>
+                    </label>
+                  </div>
+                  <div className="select-option">
+                    <input
+                      type="radio"
+                      name="searchMethod"
+                      id="search-expanded"
+                      value="expanded"
+                    />
+                    <label htmlFor="search-expanded" className="select-label">
+                      <div className="select-icon">🌟</div>
+                      <div className="select-text">Expandido</div>
+                      <div className="select-description">
+                        +450% lugares (parques, plazas, barrios)
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                <div
+                  className="search-method-info"
+                  style={{
+                    fontSize: '0.85rem',
+                    color: '#666',
+                    marginTop: '0.5rem',
+                    padding: '0.75rem',
+                    background:
+                      'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+                    borderRadius: '8px',
+                    lineHeight: '1.5',
+                  }}
+                >
+                  <strong>💡 Expandido:</strong> Incluye calles emblemáticas,
+                  plazas históricas, parques, miradores, mercados y barrios
+                  turísticos. Ideal para descubrir la ciudad a fondo.
                 </div>
               </div>
 

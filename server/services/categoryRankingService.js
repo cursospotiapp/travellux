@@ -13,19 +13,46 @@ const CATEGORY_CONFIG = {
     weight: 0.6, // 60% de los POIs
     name: 'Monumentos y Atracciones Principales',
     types: [
+      'basilica',
+      'cathedral',
+      'church',
+      'chapel',
+      'monastery',
       'attraction',
       'monument',
+      'memorial',
       'castle',
       'palace',
       'historic',
       'tower',
       'bridge',
+      'ruins',
+      'archaeological_site',
+      'city_gate',
+      'fountain',
+      'artwork',
+      'viewpoint',
     ],
     tags: {
-      tourism: ['attraction', 'monument'],
-      historic: ['monument', 'castle', 'memorial'],
-      building: ['cathedral', 'palace'],
+      tourism: ['attraction', 'monument', 'artwork', 'viewpoint'],
+      historic: [
+        'monument',
+        'castle',
+        'memorial',
+        'ruins',
+        'city_gate',
+        'archaeological_site',
+      ],
+      building: [
+        'basilica',
+        'cathedral',
+        'palace',
+        'church',
+        'chapel',
+        'monastery',
+      ],
       man_made: ['tower', 'bridge'],
+      amenity: ['fountain'],
     },
     // Sin subcategorías, toma los top por score
   },
@@ -59,12 +86,20 @@ const CATEGORY_CONFIG = {
   },
   streets: {
     weight: 0.15, // 15% de los POIs
-    name: 'Calles y Parques Icónicos',
-    types: ['street', 'park', 'square'],
+    name: 'Calles, Parques y Barrios',
+    types: [
+      'street',
+      'park',
+      'garden',
+      'square',
+      'neighbourhood',
+      'quarter',
+      'pedestrian',
+    ],
     tags: {
-      highway: true,
-      leisure: ['park'],
-      place: ['square'],
+      highway: ['pedestrian'],
+      leisure: ['park', 'garden'],
+      place: ['square', 'neighbourhood', 'quarter'],
     },
     // Sin subcategorías
   },
@@ -109,15 +144,26 @@ class CategoryRankingService {
 
     // Prioridad: monuments > culture > streets
 
-    // 1. Monumentos y atracciones
+    // 1. Monumentos y atracciones (incluye iglesias, memoriales, fuentes, obras de arte)
     if (
       CATEGORY_CONFIG.monuments.types.includes(poi.type) ||
       tags.tourism === 'attraction' ||
+      tags.tourism === 'artwork' ||
+      tags.tourism === 'viewpoint' ||
       tags.historic === 'monument' ||
+      tags.historic === 'memorial' ||
+      tags.historic === 'ruins' ||
+      tags.historic === 'city_gate' ||
+      tags.historic === 'archaeological_site' ||
+      tags.building === 'basilica' ||
       tags.building === 'cathedral' ||
+      tags.building === 'church' ||
+      tags.building === 'chapel' ||
+      tags.building === 'monastery' ||
       tags.building === 'palace' ||
       tags.man_made === 'tower' ||
-      tags.man_made === 'bridge'
+      tags.man_made === 'bridge' ||
+      tags.amenity === 'fountain'
     ) {
       return 'monuments';
     }
@@ -128,18 +174,20 @@ class CategoryRankingService {
       tags.tourism === 'museum' ||
       tags.tourism === 'gallery' ||
       tags.amenity === 'marketplace' ||
-      tags.amenity === 'theatre' ||
-      tags.place === 'neighbourhood'
+      tags.amenity === 'theatre'
     ) {
       return 'culture';
     }
 
-    // 3. Calles y parques
+    // 3. Calles, parques y barrios
     if (
       CATEGORY_CONFIG.streets.types.includes(poi.type) ||
-      tags.highway ||
+      tags.highway === 'pedestrian' ||
       tags.leisure === 'park' ||
-      tags.place === 'square'
+      tags.leisure === 'garden' ||
+      tags.place === 'square' ||
+      tags.place === 'neighbourhood' ||
+      tags.place === 'quarter'
     ) {
       return 'streets';
     }
@@ -260,7 +308,127 @@ class CategoryRankingService {
       }
     });
 
-    console.log(`[CATEGORY] ✓ Total selected: ${selected.length} POIs\n`);
+    const shortage = totalNeeded - selected.length;
+
+    console.log(
+      `[CATEGORY] ✓ Initial selection: ${selected.length}/${totalNeeded} POIs`
+    );
+
+    // 🔥 SISTEMA DE RELLENO INTELIGENTE (para viajes largos: 10 días × 6 = 60 POIs)
+    if (shortage > 0) {
+      console.log(
+        `[CATEGORY] ⚠️  Shortage of ${shortage} POIs detected. Using intelligent fill...`
+      );
+
+      // FASE 1: Redistribuir desde categorías con exceso (POIs de alta calidad)
+      const availableByCategory = {};
+      Object.entries(categorizedPOIs).forEach(([category, categoryPOIs]) => {
+        const selectedIds = new Set(selected.map((p) => p.id || p.name));
+        const remaining = categoryPOIs.filter(
+          (p) => !selectedIds.has(p.id || p.name)
+        );
+        if (remaining.length > 0) {
+          availableByCategory[category] = remaining.sort(
+            (a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0)
+          );
+        }
+      });
+
+      let added = 0;
+
+      // PASO 1: Añadir POIs de alta calidad de otras categorías
+      const categoriesWithPOIs = Object.entries(availableByCategory).sort(
+        (a, b) => b[1].length - a[1].length
+      ); // Ordenar por cantidad disponible
+
+      for (const [category, availablePOIs] of categoriesWithPOIs) {
+        // Solo añadir POIs con score >= 50 (calidad media-alta)
+        const highQualityPOIs = availablePOIs.filter(
+          (p) => (p.relevanceScore || 0) >= 50
+        );
+        const toAdd = Math.min(shortage - added, highQualityPOIs.length);
+
+        if (toAdd > 0) {
+          const additionalPOIs = highQualityPOIs.slice(0, toAdd);
+          selected.push(...additionalPOIs);
+          added += toAdd;
+
+          console.log(
+            `[CATEGORY]   + Added ${toAdd} quality POIs (score≥50) from ${CATEGORY_CONFIG[category].name}`
+          );
+          console.log(
+            `[CATEGORY]     ${additionalPOIs
+              .map((p) => `${p.name} (${p.relevanceScore})`)
+              .join(', ')}`
+          );
+
+          if (added >= shortage) break;
+        }
+      }
+
+      // PASO 2: Si aún faltan, añadir POIs de menor calidad (para días finales)
+      if (added < shortage) {
+        console.log(
+          `[CATEGORY]   Still missing ${
+            shortage - added
+          } POIs. Adding secondary POIs...`
+        );
+
+        for (const [category, availablePOIs] of categoriesWithPOIs) {
+          const selectedIds = new Set(selected.map((p) => p.id || p.name));
+          const remaining = availablePOIs.filter(
+            (p) => !selectedIds.has(p.id || p.name)
+          );
+          const toAdd = Math.min(shortage - added, remaining.length);
+
+          if (toAdd > 0) {
+            const additionalPOIs = remaining.slice(0, toAdd);
+            selected.push(...additionalPOIs);
+            added += toAdd;
+
+            console.log(
+              `[CATEGORY]   + Added ${toAdd} secondary POIs from ${CATEGORY_CONFIG[category].name}`
+            );
+
+            if (added >= shortage) break;
+          }
+        }
+      }
+
+      console.log(
+        `[CATEGORY] ✓ Intelligent fill complete: ${selected.length}/${totalNeeded} POIs`
+      );
+
+      if (selected.length < totalNeeded) {
+        console.log(
+          `[CATEGORY] ⚠️  WARNING: Still ${
+            totalNeeded - selected.length
+          } POIs short. Need more POIs from source.`
+        );
+      }
+      console.log();
+    } else {
+      console.log();
+    }
+
+    // 🔥 ORDENAR FINAL: POIs más importantes primero (para días iniciales)
+    // Los POIs con mayor score irán a los primeros días del viaje
+    selected.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
+
+    console.log(
+      `[CATEGORY] ✓ Final ranking: ${selected.length} POIs sorted by importance`
+    );
+    if (selected.length > 0) {
+      const topScores = selected
+        .slice(0, 5)
+        .map((p) => `${p.name} (${p.relevanceScore})`);
+      const bottomScores = selected
+        .slice(-3)
+        .map((p) => `${p.name} (${p.relevanceScore})`);
+      console.log(`[CATEGORY]   Top 5: ${topScores.join(', ')}`);
+      console.log(`[CATEGORY]   Bottom 3: ${bottomScores.join(', ')}`);
+    }
+    console.log();
 
     return selected;
   }
