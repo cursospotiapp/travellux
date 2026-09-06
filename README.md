@@ -1,4 +1,19 @@
-# TravelLux — planifica tu viaje perfecto en segundos
+<div align="center">
+
+# **TravelLux**
+
+### *Planifica tu viaje perfecto en segundos*
+
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
+[![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
+[![OpenStreetMap](https://img.shields.io/badge/OpenStreetMap-Overpass-7EBC6F?style=flat-square&logo=openstreetmap&logoColor=white)](https://www.openstreetmap.org)
+[![Wikipedia](https://img.shields.io/badge/Wikipedia-Wikidata-000000?style=flat-square&logo=wikipedia&logoColor=white)](https://www.wikidata.org)
+[![Google Gemini](https://img.shields.io/badge/Google-Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)](https://ai.google.dev)
+[![Leaflet](https://img.shields.io/badge/Leaflet-maps-199900?style=flat-square&logo=leaflet&logoColor=white)](https://leafletjs.com)
+
+</div>
+
+---
 
 **TravelLux convierte un destino y dos fechas en un itinerario completo con puntos de interés reales, imágenes, precios, mapa y hoteles.**
 Escribes adónde quieres ir, cuándo y con qué presupuesto; la aplicación busca monumentos, museos y rincones con datos de OpenStreetMap y Wikipedia, los reparte por días con horarios y te los pinta sobre un mapa. Sin hojas de cálculo, sin abrir veinte pestañas.
