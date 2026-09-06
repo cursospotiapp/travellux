@@ -1,5 +1,16 @@
 node_modules
 dist
+build
+coverage
 .DS_Store
 *.log
 .cache
+# Entornos y credenciales: nunca versionar valores reales
+.env
+.env.local
+.env.*.local
+# Claves y certificados accidentales
+*.pem
+*.key
+*.p12
+*.pfx
