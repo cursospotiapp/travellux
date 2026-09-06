@@ -3,20 +3,26 @@
 **TravelLux convierte un destino y dos fechas en un itinerario completo con puntos de interés reales, imágenes, precios, mapa y hoteles.**
 Escribes adónde quieres ir, cuándo y con qué presupuesto; la aplicación busca monumentos, museos y rincones con datos de OpenStreetMap y Wikipedia, los reparte por días con horarios y te los pinta sobre un mapa. Sin hojas de cálculo, sin abrir veinte pestañas.
 
-![Itinerario de 2 días por Madrid con imágenes, precios y tiempos de walking](docs/screenshots/itinerario.png)
+![Landing de TravelLux con el formulario de planificación](docs/screenshots/landing.png)
 
 ## Usarlo es así de fácil
 
 1. **Dime adónde vas.** Un destino, las fechas, el presupuesto y el ritmo que prefieres (relajado, equilibrado o a tope).
 2. **Pulsa el botón.** La aplicación busca cientos de lugares con calidad Wikipedia, elige los mejores repartidos por zonas y calcula cómo ir de uno a otro.
-3. **Vive el plan.** Cada día es una lista con horario, duración, precio, consejos y foto de cada sitio, con el itinerario dibujado sobre el mapa.
+3. **Vive el plan.** Cada día es una lista con horario, duración, precio, consejos y foto de cada sitio.
 4. **Elige dónde dormir.** Hoteles sugeridos según tu presupuesto, con precio por noche y zona.
 
-![Formulario para planear tu viaje](docs/screenshots/landing.png)
+![Formulario con destino, fechas, presupuesto y ritmo](docs/screenshots/formulario.png)
+
+## Tu viaje, día a día
+
+Cada día viene con sus paradas ordenadas: foto real del lugar, horario, duración, precio, consejos prácticos y cuánto se tarda hasta la siguiente parada. Todo verificado con datos de OpenStreetMap y Wikipedia.
+
+![Itinerario del día 1 en Madrid con el Palacio Real](docs/screenshots/itinerario.png)
 
 ## Tu viaje, dibujado en el mapa
 
-Cada día se puede ver sobre un mapa real: marcadores numerados en el orden de la visita, la ruta trazada entre ellos y un clic para saltar a cualquier lugar. Colores distintos por día para no perderte.
+Cada día se puede ver sobre un mapa real: marcadores numerados en el orden de la visita y la ruta trazada entre ellos. Un clic en cualquier parada y saltas a su ficha.
 
 ![Mapa del día 1 con los marcadores numerados y la ruta](docs/screenshots/mapa.png)
 
@@ -43,11 +49,6 @@ Hoteles recomendados según el presupuesto que marcaste, con su zona, servicios 
 **Inteligencia artificial (opcional)**
 - Con una API key de Google Gemini, el modo progresivo redacta el resumen del viaje, sugiere hoteles y crea eventos adicionales, enviándotelo todo en directo (SSE) con barra de progreso.
 - Si la IA o la búsqueda fallan (límites de uso, servicio caído), la app avisa y siempre entrega un itinerario: nunca se queda en blanco.
-
-**Interfaz**
-- Vista de itinerario por días con carrusel de fotos, consejos, precios y tiempos.
-- Selector de días, mapa a pantalla completa con ESC para cerrar, y botón para planear otro viaje.
-- Animaciones de entrada (AOS), carruseles (Swiper) y selector de fechas en español (flatpickr).
 
 ## Ponerlo en marcha (5 minutos)
 
