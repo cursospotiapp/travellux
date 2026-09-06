@@ -6,12 +6,11 @@
 import dotenv from 'dotenv';
 import axios from 'axios';
 import { isValidCoordinates } from '../utils/geoUtils.js';
+import { executeOverpassQueryWithFailover } from './overpassClient.js';
 
 // Cargar variables de entorno ANTES de usar process.env
 dotenv.config();
 
-const OVERPASS_ENDPOINT =
-  process.env.OVERPASS_ENDPOINT || 'https://overpass-api.de/api/interpreter';
 const TIMEOUT = parseInt(process.env.OVERPASS_TIMEOUT) || 180000; // 3 minutos
 const MAX_RETRIES = parseInt(process.env.OVERPASS_MAX_RETRIES) || 3;
 const DEFAULT_RADIUS = parseInt(process.env.OVERPASS_DEFAULT_RADIUS) || 8000; // 8km por defecto
@@ -33,16 +32,33 @@ async function fetchWikipediaImages(wikipediaUrl) {
     let title = parts[1];
     const images = [];
 
+    // Helper GET con reintento ante 429 (rate limit de Wikipedia)
+    async function getWithRateLimit(url, timeoutMs) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          return await axios.get(url, {
+            timeout: timeoutMs,
+            headers: { 'User-Agent': 'TripPlanner/1.0' },
+          });
+        } catch (err) {
+          const status = err.response?.status;
+          if (status === 429 && attempt < 2) {
+            const wait = (attempt + 1) * 1500;
+            await new Promise((r) => setTimeout(r, wait));
+            continue;
+          }
+          throw err;
+        }
+      }
+    }
+
     // 🔥 FUENTE 1: Wikipedia API (pageimages + images del artículo)
     try {
       const apiUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
         title
       )}&prop=pageimages|images&piprop=original&imlimit=10&redirects=1&format=json&formatversion=2`;
 
-      const response = await axios.get(apiUrl, {
-        timeout: 5000,
-        headers: { 'User-Agent': 'TripPlanner/1.0' },
-      });
+      const response = await getWithRateLimit(apiUrl, 5000);
 
       let pageData = response.data?.query?.pages?.[0];
 
@@ -56,10 +72,7 @@ async function fetchWikipediaImages(wikipediaUrl) {
             correctTitle
           )}&prop=pageimages|images&piprop=original&imlimit=10&redirects=1&format=json&formatversion=2`;
 
-          const retryResponse = await axios.get(retryUrl, {
-            timeout: 5000,
-            headers: { 'User-Agent': 'TripPlanner/1.0' },
-          });
+          const retryResponse = await getWithRateLimit(retryUrl, 5000);
 
           pageData = retryResponse.data?.query?.pages?.[0];
         }
@@ -104,13 +117,13 @@ async function fetchWikipediaImages(wikipediaUrl) {
               imgTitle
             )}&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&formatversion=2`;
 
-            const imgResponse = await axios.get(imgUrl, {
-              timeout: 3000,
-              headers: { 'User-Agent': 'TripPlanner/1.0' },
-            });
+            const imgResponse = await getWithRateLimit(imgUrl, 4000);
 
             const imgData = imgResponse.data?.query?.pages?.[0];
-            const imgSourceUrl = imgData?.imageinfo?.[0]?.url;
+            // Usar thumburl (resolución reducida) si está disponible:
+            // la URL "original" puede pesar varios MB o ser .tif no renderizable
+            const imgInfo = imgData?.imageinfo?.[0];
+            const imgSourceUrl = imgInfo?.thumburl || imgInfo?.url;
 
             if (imgSourceUrl && !images.includes(imgSourceUrl)) {
               images.push(imgSourceUrl);
@@ -133,10 +146,7 @@ async function fetchWikipediaImages(wikipediaUrl) {
           title
         )}&prop=pageprops&ppprop=wikibase_item&format=json&formatversion=2`;
 
-        const wikidataResponse = await axios.get(wikidataUrl, {
-          timeout: 3000,
-          headers: { 'User-Agent': 'TripPlanner/1.0' },
-        });
+        const wikidataResponse = await getWithRateLimit(wikidataUrl, 4000);
 
         const wikidataId =
           wikidataResponse.data?.query?.pages?.[0]?.pageprops?.wikibase_item;
@@ -145,10 +155,7 @@ async function fetchWikipediaImages(wikipediaUrl) {
           // Obtener imagen (P18) del elemento de Wikidata
           const entityUrl = `https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${wikidataId}&property=P18&format=json`;
 
-          const entityResponse = await axios.get(entityUrl, {
-            timeout: 3000,
-            headers: { 'User-Agent': 'TripPlanner/1.0' },
-          });
+          const entityResponse = await getWithRateLimit(entityUrl, 4000);
 
           const imageClaim = entityResponse.data?.claims?.P18?.[0];
           const imageFilename = imageClaim?.mainsnak?.datavalue?.value;
@@ -159,13 +166,12 @@ async function fetchWikipediaImages(wikipediaUrl) {
               imageFilename
             )}&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&formatversion=2`;
 
-            const commonsResponse = await axios.get(commonsUrl, {
-              timeout: 3000,
-              headers: { 'User-Agent': 'TripPlanner/1.0' },
-            });
+            const commonsResponse = await getWithRateLimit(commonsUrl, 4000);
 
-            const imgUrl =
-              commonsResponse.data?.query?.pages?.[0]?.imageinfo?.[0]?.url;
+            const commonsInfo =
+              commonsResponse.data?.query?.pages?.[0]?.imageinfo?.[0];
+            // thumburl preferente: evita originales de varios MB
+            const imgUrl = commonsInfo?.thumburl || commonsInfo?.url;
             if (imgUrl && !images.includes(imgUrl)) {
               images.push(imgUrl);
             }
@@ -1018,34 +1024,15 @@ function buildOverpassQuery(cityCoords) {
 }
 
 /**
- * Ejecuta query Overpass con retry
+ * Ejecuta query Overpass con retry y failover multi-endpoint
  * @private
  */
-async function executeOverpassQuery(query, retryCount = 0) {
+async function executeOverpassQuery(query) {
   try {
-    const response = await axios.post(OVERPASS_ENDPOINT, query, {
-      headers: { 'Content-Type': 'text/plain' },
-      timeout: TIMEOUT,
-    });
-
-    return response.data;
+    return await executeOverpassQueryWithFailover(query, TIMEOUT, 1);
   } catch (error) {
-    console.error(
-      `[OSM] Query failed (attempt ${retryCount + 1}/${MAX_RETRIES}):`,
-      error.message
-    );
-
-    // Retry con backoff exponencial
-    if (retryCount < MAX_RETRIES) {
-      const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-      console.log(`[OSM] Retrying in ${delay / 1000}s...`);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-      return executeOverpassQuery(query, retryCount + 1);
-    }
-
-    throw new Error(
-      `Overpass API failed after ${MAX_RETRIES} retries: ${error.message}`
-    );
+    console.error(`[OSM] Query failed on all endpoints: ${error.message}`);
+    throw error;
   }
 }
 
@@ -1631,7 +1618,9 @@ export async function enrichPOIsWithImages(pois) {
     `[WIKIPEDIA] Fetching images from Wikipedia + Wikidata for ${pois.length} selected POIs...`
   );
 
-  const BATCH_SIZE = 8; // Aumentado para más paralelismo
+  // Wikipedia API tiene rate limit estricto (429): lotes pequeños + pausas
+  const BATCH_SIZE = 3;
+  const BATCH_PAUSE_MS = 400;
   let poisWithImages = 0;
   let totalImages = 0;
   const startTime = Date.now();
@@ -1656,9 +1645,9 @@ export async function enrichPOIsWithImages(pois) {
       })
     );
 
-    // Pequeña pausa entre batches
+    // Pausa entre batches para no agotar el rate limit de Wikipedia
     if (i + BATCH_SIZE < poisWithWikipedia.length) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, BATCH_PAUSE_MS));
     }
   }
 

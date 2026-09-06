@@ -6,6 +6,24 @@ function App() {
   // Estado para controlar qué página mostrar
   const [currentPage, setCurrentPage] = useState('landing'); // 'landing' o 'planner'
 
+  // Demo instantánea: /?demo=madrid carga el viaje de muestra sin backend
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('demo') === 'madrid') {
+      fetch('/demo/madrid-demo.json')
+        .then((r) => r.json())
+        .then((data) => {
+          sessionStorage.setItem('aiTripData', JSON.stringify(data));
+          sessionStorage.setItem(
+            'travelPreferences',
+            JSON.stringify(data.userPreferences)
+          );
+          setCurrentPage('planner');
+        })
+        .catch((e) => console.error('demo load failed:', e));
+    }
+  }, []);
+
   // Listener para cambios en sessionStorage
   React.useEffect(() => {
     const checkPreferences = () => {

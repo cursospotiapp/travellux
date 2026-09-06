@@ -1,0 +1,461 @@
+{
+  "tripId": "trip-madrid-demo-2027",
+  "userPreferences": {
+    "destination": "Madrid",
+    "startDate": "20/10/2026",
+    "endDate": "21/10/2026",
+    "budget": "medium",
+    "intensity": "balanced",
+    "searchMethod": "original"
+  },
+  "tripSummary": {
+    "destination": "Madrid",
+    "country": "España",
+    "duration": 2,
+    "totalDays": 2,
+    "departureCity": "Madrid",
+    "subtitle": "Dos días entre palacios reales, arte de primer nivel y los mejores atardeceres de la capital. Visitarás 12 lugares icónicos incluyendo el Palacio Real, el Prado y el Templo de Debod.",
+    "centerCoordinates": {
+      "lat": 40.4173,
+      "lng": -3.702
+    }
+  },
+  "hotels": [
+    {
+      "id": "hotel-1",
+      "name": "Hotel Palacio del Retiro",
+      "stars": 5,
+      "price": {
+        "amount": 145,
+        "currency": "EUR",
+        "period": "noche"
+      },
+      "location": {
+        "area": "Retiro",
+        "description": "Frente al parque, con spa y vistas",
+        "coordinates": {
+          "lat": 40.4165,
+          "lng": -3.6908
+        }
+      },
+      "image": "/img/madrid/hotel-palacio.jpg",
+      "amenities": [
+        "WiFi",
+        "Spa",
+        "Desayuno",
+        "Gimnasio"
+      ],
+      "bookingUrl": "https://booking.com"
+    },
+    {
+      "id": "hotel-2",
+      "name": "Madrid Gran Vía Rooms",
+      "stars": 4,
+      "price": {
+        "amount": 98,
+        "currency": "EUR",
+        "period": "noche"
+      },
+      "location": {
+        "area": "Gran Vía",
+        "description": "En plena Gran Vía, moderno y con azotea",
+        "coordinates": {
+          "lat": 40.4203,
+          "lng": -3.7022
+        }
+      },
+      "image": "/img/madrid/hotel-gran-via.jpg",
+      "amenities": [
+        "WiFi",
+        "Desayuno",
+        "Azotea"
+      ],
+      "bookingUrl": "https://booking.com"
+    },
+    {
+      "id": "hotel-3",
+      "name": "Hostal Ópera Center",
+      "stars": 3,
+      "price": {
+        "amount": 72,
+        "currency": "EUR",
+        "period": "noche"
+      },
+      "location": {
+        "area": "Ópera",
+        "description": "A 2 min del Palacio Real, sencillo y acogedor",
+        "coordinates": {
+          "lat": 40.4186,
+          "lng": -3.7103
+        }
+      },
+      "image": "/img/madrid/hotel-opera.jpg",
+      "amenities": [
+        "WiFi",
+        "Recepción 24h"
+      ],
+      "bookingUrl": "https://booking.com"
+    }
+  ],
+  "itinerary": {
+    "day1": {
+      "dayNumber": 1,
+      "date": "2026-10-20",
+      "title": "Día 1 en Madrid",
+      "description": "Madrid de los Austrias: palacios, plazas y tapas",
+      "events": [
+        {
+          "id": "evt-1-1",
+          "time": "09:00",
+          "duration": "2h",
+          "title": "Palacio Real de Madrid",
+          "description": "La residencia oficial de los Reyes de España y el palacio real más grande de Europa Occidental. Sus 3.418 habitaciones, el Salón del Trono y la Armería Real lo convierten en la visita imprescindible de la ciudad.",
+          "type": "monument",
+          "location": {
+            "name": "Palacio Real de Madrid",
+            "address": "Calle de Bailén, Madrid",
+            "coordinates": {
+              "lat": 40.4179,
+              "lng": -3.7143
+            }
+          },
+          "price": {
+            "amount": 12,
+            "currency": "EUR"
+          },
+          "images": [
+            "/img/madrid/palacio-real.jpg"
+          ],
+          "tips": [
+            "⏰ Horario: 10:00 - 19:00",
+            "♿ Accesible",
+            "🎟️ Compra la entrada online y evita la cola"
+          ],
+          "travelTime": "7 min caminando"
+        },
+        {
+          "id": "evt-1-2",
+          "time": "11:00",
+          "duration": "1h 30min",
+          "title": "Catedral de la Almudena",
+          "description": "La catedral de Madrid, consagrada en 1993 por Juan Pablo II. Mezcla estilos neogótico y neoclásico, con una cúpula de vidrio de colores única y vistas al Palacio Real.",
+          "type": "attraction",
+          "location": {
+            "name": "Catedral de la Almudena",
+            "address": "Calle de Bailén, 10, Madrid",
+            "coordinates": {
+              "lat": 40.4167,
+              "lng": -3.7138
+            }
+          },
+          "price": {
+            "amount": 0,
+            "currency": "EUR"
+          },
+          "images": [
+            "/img/madrid/almudena.jpg"
+          ],
+          "tips": [
+            "✨ Entrada gratuita",
+            "⛪ No te pierdas la cúpula de vidrios de colores"
+          ],
+          "travelTime": "3 min caminando"
+        },
+        {
+          "id": "evt-1-3",
+          "time": "13:00",
+          "duration": "1h 30min",
+          "title": "Plaza Mayor de Madrid",
+          "description": "El corazón del Madrid de los Austrias desde 1620. Rodeada de edificios de ladrillo rojo con frescos y balcones cerrados, aquí se celebraban corridas de toros, mercados yautos de fe.",
+          "type": "historic",
+          "location": {
+            "name": "Plaza Mayor de Madrid",
+            "address": "Plaza Mayor, 28012 Madrid",
+            "coordinates": {
+              "lat": 40.4155,
+              "lng": -3.7074
+            }
+          },
+          "price": {
+            "amount": 0,
+            "currency": "EUR"
+          },
+          "images": [
+            "/img/madrid/hotel-palacio.jpg"
+          ],
+          "tips": [
+            "🥪 Prueba el bocadillo de calamares en los alrededores",
+            "🏛️ 234 balcones rodean la plaza"
+          ],
+          "travelTime": "2 min caminando"
+        },
+        {
+          "id": "evt-1-4",
+          "time": "15:00",
+          "duration": "1h",
+          "title": "Mercado de San Miguel",
+          "description": "Mercado gastronómico de 1916 bajo una estructura de hierro y vidrio Modernista. El lugar perfecto para tapear: ostras, vermut, jamón ibérico y anchoas en un mismo espacio.",
+          "type": "market",
+          "location": {
+            "name": "Mercado de San Miguel",
+            "address": "Plaza de San Miguel, s/n, Madrid",
+            "coordinates": {
+              "lat": 40.414,
+              "lng": -3.7087
+            }
+          },
+          "price": {
+            "amount": 0,
+            "currency": "EUR"
+          },
+          "images": [
+            "/img/madrid/san-miguel.jpg"
+          ],
+          "tips": [
+            "🥂 Vermut de grifo de la casa",
+            "⏰ Horario: 10:00 - 24:00"
+          ],
+          "travelTime": "4 min caminando"
+        },
+        {
+          "id": "evt-1-5",
+          "time": "16:30",
+          "duration": "45min",
+          "title": "Puerta del Sol",
+          "description": "El kilómetro cero de todas las carreteras de España. La plaza alberga el reloj de las campanadas de Nochevieja, la estatua del Oso y el Madroño y el antiguo Real Correos.",
+          "type": "historic",
+          "location": {
+            "name": "Puerta del Sol",
+            "address": "Puerta del Sol, 28013 Madrid",
+            "coordinates": {
+              "lat": 40.4168,
+              "lng": -3.7038
+            }
+          },
+          "price": {
+            "amount": 0,
+            "currency": "EUR"
+          },
+          "images": [
+            "/img/madrid/puerta-sol.jpg"
+          ],
+          "tips": [
+            "🐾 Busca la estatua del Oso y el Madroño",
+            "📍 Pie del km 0 en la acera del Correos"
+          ],
+          "travelTime": "10 min caminando"
+        },
+        {
+          "id": "evt-1-6",
+          "time": "18:00",
+          "duration": "1h 30min",
+          "title": "Templo de Debod",
+          "description": "Auténtico templo egipcio de 2.200 años donado a España por Egipto tras la construcción de la presa de Asuán. Sus reflejos sobre el agua al atardecer son el regalo perfecto para cerrar el día.",
+          "type": "monument",
+          "location": {
+            "name": "Templo de Debod",
+            "address": "Calle Ferraz, 1, Madrid",
+            "coordinates": {
+              "lat": 40.4238,
+              "lng": -3.7177
+            }
+          },
+          "price": {
+            "amount": 0,
+            "currency": "EUR"
+          },
+          "images": [
+            "/img/madrid/templo-debod.jpg"
+          ],
+          "tips": [
+            "📸 El atardecer es EL momento",
+            "🌅 Mirador gratuito con vistas al Palacio Real"
+          ],
+          "travelTime": "Ir al hotel / descanso"
+        }
+      ]
+    },
+    "day2": {
+      "dayNumber": 2,
+      "date": "2026-10-21",
+      "title": "Día 2 en Madrid",
+      "description": "Arte y jardines: el Prado, el Retiro y la Gran Vía",
+      "events": [
+        {
+          "id": "evt-2-1",
+          "time": "09:30",
+          "duration": "2h 30min",
+          "title": "Museo del Prado",
+          "description": "Una de las pinacotecas más importantes del mundo: Las Meninas de Velázquez, El 3 de Mayo de Goya, El Jardín de las Delicias de El Bosco y más de 8.000 obras. Un museo para perderse horas.",
+          "type": "museum",
+          "location": {
+            "name": "Museo Nacional del Prado",
+            "address": "Paseo del Prado, s/n, Madrid",
+            "coordinates": {
+              "lat": 40.4138,
+              "lng": -3.6921
+            }
+          },
+          "price": {
+            "amount": 15,
+            "currency": "EUR"
+          },
+          "images": [
+            "/img/madrid/prado.jpg"
+          ],
+          "tips": [
+            "🎨 Empieza por Velázquez y Goya",
+            "🎟️ Entrada online = sin cola",
+            "🎧 Audioguía muy recomendable"
+          ],
+          "travelTime": "5 min caminando"
+        },
+        {
+          "id": "evt-2-2",
+          "time": "12:30",
+          "duration": "2h",
+          "title": "Parque del Buen Retiro",
+          "description": "125 hectáreas de jardines históricos desde 1630. Pasea hasta el estanque de las galeras, el Palacio de Cristal y la Rosaleda. Patrimonio de la Humanidad por la Unesco.",
+          "type": "park",
+          "location": {
+            "name": "Parque del Buen Retiro",
+            "address": "Plaza de la Independencia, 7, Madrid",
+            "coordinates": {
+              "lat": 40.4193,
+              "lng": -3.6892
+            }
+          },
+          "price": {
+            "amount": 0,
+            "currency": "EUR"
+          },
+          "images": [
+            "/img/madrid/retiro.jpg"
+          ],
+          "tips": [
+            "🚣 Barca en el estanque (6€)",
+            "🌳 15.000 árboles dentro de la ciudad"
+          ],
+          "travelTime": "2 min caminando"
+        },
+        {
+          "id": "evt-2-3",
+          "time": "14:45",
+          "duration": "45min",
+          "title": "Palacio de Cristal",
+          "description": "Invernadero de hierro y cristal de 1887 inspirado en el Crystal Palace de Londres, situado junto a la charca del Retiro. Hoy acoge instalaciones de arte contemporáneo del Reina Sofía.",
+          "type": "museum",
+          "location": {
+            "name": "Palacio de Cristal",
+            "address": "Paseo de la República de Cuba, Madrid",
+            "coordinates": {
+              "lat": 40.4145,
+              "lng": -3.6865
+            }
+          },
+          "price": {
+            "amount": 0,
+            "currency": "EUR"
+          },
+          "images": [
+            "/img/madrid/palacio-cristal.jpg"
+          ],
+          "tips": [
+            "✨ Entrada gratuita",
+            "📸 El reflejo en la charca es icónico"
+          ],
+          "travelTime": "12 min caminando"
+        },
+        {
+          "id": "evt-2-4",
+          "time": "16:00",
+          "duration": "45min",
+          "title": "Puerta de Alcalá",
+          "description": "La primera puerta monumental posterior a la muralla de Madrid, mandada construir por Carlos III en 1778. Sus tres arcos y cinco vanos la convirtieron en icono de la ciudad.",
+          "type": "monument",
+          "location": {
+            "name": "Puerta de Alcalá",
+            "address": "Plaza de la Independencia, Madrid",
+            "coordinates": {
+              "lat": 40.4196,
+              "lng": -3.6881
+            }
+          },
+          "price": {
+            "amount": 0,
+            "currency": "EUR"
+          },
+          "images": [
+            "/img/madrid/puerta-alcala.jpg"
+          ],
+          "tips": [
+            "🏛️ La verás de camino, ¡no hace falta entrada!",
+            "🎵 Canción de Almodóvar y Nacho Canut"
+          ],
+          "travelTime": "8 min caminando"
+        },
+        {
+          "id": "evt-2-5",
+          "time": "17:30",
+          "duration": "1h 30min",
+          "title": "Gran Vía",
+          "description": "La avenida que más parece un plató de cine: teatros de musicales, cines, tiendas y rascacielos de los años 10-20. Calificada como la calle más famosa de Madrid, late hasta la medianoche.",
+          "type": "street",
+          "location": {
+            "name": "Gran Vía",
+            "address": "Gran Vía, 28013 Madrid",
+            "coordinates": {
+              "lat": 40.42,
+              "lng": -3.7022
+            }
+          },
+          "price": {
+            "amount": 0,
+            "currency": "EUR"
+          },
+          "images": [
+            "/img/madrid/gran-via.jpg"
+          ],
+          "tips": [
+            "🎭 Mira la cartelera de los musicales",
+            "🛍️ Compras y azoteas con vistas"
+          ],
+          "travelTime": "5 min caminando"
+        },
+        {
+          "id": "evt-2-6",
+          "time": "19:30",
+          "duration": "1h",
+          "title": "Plaza de Cibeles",
+          "description": "La fuente de la diosa Cibeles, donde el Real Madrid celebra sus títulos, rodeada del Palacio de Cibeles (antiguo Correos) con su mirador gratuito en la octava planta.",
+          "type": "historic",
+          "location": {
+            "name": "Plaza de Cibeles",
+            "address": "Plaza de Cibeles, 1, Madrid",
+            "coordinates": {
+              "lat": 40.4194,
+              "lng": -3.6941
+            }
+          },
+          "price": {
+            "amount": 0,
+            "currency": "EUR"
+          },
+          "images": [
+            "/img/madrid/cibeles.jpg"
+          ],
+          "tips": [
+            "🌆 Sube al mirador del Palacio de Cibeles",
+            "⚽ Si el Madrid gana, la fiesta es aquí"
+          ],
+          "travelTime": "Fin del recorrido"
+        }
+      ]
+    }
+  },
+  "generationStats": {
+    "totalTime": 0,
+    "poisFound": 12,
+    "avgRelevanceScore": "98.6"
+  }
+}

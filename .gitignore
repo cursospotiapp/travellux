@@ -9,6 +9,9 @@ coverage
 .env
 .env.local
 .env.*.local
+# Cachés de ejecución (imágenes proxy, viajes generados)
+.image-cache/
+.trip-cache/
 # Claves y certificados accidentales
 *.pem
 *.key

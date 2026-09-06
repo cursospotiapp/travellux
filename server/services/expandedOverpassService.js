@@ -18,17 +18,15 @@
  */
 
 import dotenv from 'dotenv';
-import axios from 'axios';
 import { isValidCoordinates } from '../utils/geoUtils.js';
 import {
   enrichPOIsWithImages,
   enrichPOIsWithDescriptions,
 } from './overpassService.js';
+import { executeOverpassQueryWithFailover } from './overpassClient.js';
 
 dotenv.config();
 
-const OVERPASS_ENDPOINT =
-  process.env.OVERPASS_ENDPOINT || 'https://overpass-api.de/api/interpreter';
 const QUADRANT_TIMEOUT = 15000; // 15 segundos por cuadrante (query más grande con Tier 2)
 const QUADRANT_SIDE_KM = 3.5; // Lado de cada cuadrante en km
 
@@ -244,13 +242,14 @@ async function queryQuadrant(bbox, quadrantName) {
   const startTime = Date.now();
 
   try {
-    const response = await axios.post(OVERPASS_ENDPOINT, query, {
-      headers: { 'Content-Type': 'text/plain' },
-      timeout: QUADRANT_TIMEOUT,
-    });
+    const response = await executeOverpassQueryWithFailover(
+      query,
+      QUADRANT_TIMEOUT,
+      0
+    );
 
     const duration = Date.now() - startTime;
-    const elements = response.data?.elements || [];
+    const elements = response?.elements || [];
 
     console.log(
       `[EXPANDED-OSM] ✓ ${quadrantName}: ${elements.length} raw POIs in ${(

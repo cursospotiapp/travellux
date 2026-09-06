@@ -119,6 +119,13 @@ export async function generateTripProgressive(preferences, onProgress) {
 
     console.timeEnd('generateTripProgressive');
     console.log(`[SERVICE] Stream ended after ${updateCount} updates`);
+
+    // Si el stream se cortó sin [DONE], finalData puede ser null:
+    // devolver ok:false en vez de ok:true sin datos
+    if (!finalData) {
+      console.error('[SERVICE] ✗ Stream ended without complete data');
+      return { ok: false, error: 'stream_incomplete' };
+    }
     return { ok: true, data: finalData };
   } catch (error) {
     console.timeEnd('generateTripProgressive');

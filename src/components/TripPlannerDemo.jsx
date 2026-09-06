@@ -481,7 +481,7 @@ function TripPlannerDemo() {
         </p>
 
         <div className="hotels-grid">
-          {tripData.hotels.map((hotel, index) => (
+          {(tripData.hotels || []).map((hotel, index) => (
             <div
               key={hotel.id}
               className="hotel-card"
@@ -489,12 +489,12 @@ function TripPlannerDemo() {
               data-aos-delay={200 + index * 100}
             >
               <img
-                src={hotel.image || '/placeholder.svg?height=220&width=400'}
+                src={hotel.image || 'https://placehold.co/400x220/1a2980/ffffff?text=Hotel'}
                 alt={hotel.name}
                 className="hotel-image"
                 onError={(e) => {
                   e.target.src =
-                    'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=220&fit=crop';
+                    'https://placehold.co/400x220/1a2980/ffffff?text=Hotel';
                 }}
               />
               <div className="hotel-content">
@@ -611,7 +611,8 @@ function TripPlannerDemo() {
                               {(event.images && event.images.length > 0
                                 ? event.images
                                 : [
-                                    'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400&h=320&fit=crop',
+                                    'https://placehold.co/400x320/1a2980/ffffff?text=' +
+                                      encodeURIComponent(event.title || 'Viaje'),
                                   ]
                               ).map((image, imgIndex) => (
                                 <div key={imgIndex} className="swiper-slide">
@@ -620,7 +621,8 @@ function TripPlannerDemo() {
                                     alt={`${event.title} ${imgIndex + 1}`}
                                     onError={(e) => {
                                       e.target.src =
-                                        'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400&h=320&fit=crop';
+                                        'https://placehold.co/400x320/1a2980/ffffff?text=' +
+                                        encodeURIComponent(event.title || 'Viaje');
                                     }}
                                   />
                                 </div>

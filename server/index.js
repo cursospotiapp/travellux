@@ -2,16 +2,24 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import smartPOIService from './services/smartPOIService.js';
 import smartPOIServiceExpanded from './services/smartPOIServiceExpanded.js';
+import { buildLocalFallbackTrip } from './services/localFallback.js';
+import imageProxy from './services/imageProxy.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000; // backend
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
-const MODEL_NAME = process.env.MODEL_NAME || 'gemini-1.5-flash';
+const MODEL_NAME = process.env.MODEL_NAME || 'gemini-2.5-flash';
 
 // Cache en memoria para respuestas
 const responseCache = new Map();
@@ -30,13 +38,15 @@ function parseDate(dateStr) {
   }
 
   // Si es formato dd/mm/yyyy, convertir usando Date.UTC
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
     const [day, month, year] = dateStr.split('/').map(Number);
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
     return new Date(Date.UTC(year, month - 1, day));
   }
 
-  // Intentar parsear de todas formas
-  return new Date(dateStr);
+  // Formato no reconocido: devolver null (antes creaba Invalid Date
+  // y "01/10/2026, 02/10/2026" se colaba como fecha válida)
+  return null;
 }
 
 // Formatear fecha a yyyy-mm-dd (siempre en UTC)
@@ -46,6 +56,20 @@ function formatDate(date) {
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
   const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+// Convertir URLs de imágenes de Wikimedia al proxy del backend:
+// upload.wikimedia.org devuelve 403 al navegador (hotlinking bloqueado)
+function proxyImageUrl(url) {
+  if (typeof url !== 'string') return url;
+  if (
+    url.includes('upload.wikimedia.org') ||
+    url.includes('thumb.wikimedia.org') ||
+    url.includes('commons.wikimedia.org')
+  ) {
+    return `http://localhost:${PORT}/api/image?src=${encodeURIComponent(url)}`;
+  }
+  return url;
 }
 
 // Factory para crear modelo con configuración optimizada
@@ -234,10 +258,18 @@ async function generateWithRetry(model, prompt, partName, maxRetries = 2) {
       console.log(`[RETRY] Received ${text.length} chars for "${partName}"`);
 
       const parsed = parseJSON(text);
-      if (parsed) {
+      // Un array/objeto vacío es JSON válido pero inútil: contar como fallo
+      const isEmpty =
+        parsed === null ||
+        (Array.isArray(parsed) && parsed.length === 0) ||
+        (typeof parsed === 'object' && Object.keys(parsed).length === 0);
+      if (!isEmpty) {
         console.log(`[RETRY] ✓ Success for "${partName}" on attempt ${i + 1}`);
         return parsed;
       }
+      console.warn(
+        `[RETRY] Empty result for "${partName}" on attempt ${i + 1}, retrying...`
+      );
 
       if (i === maxRetries) {
         console.error(
@@ -272,6 +304,9 @@ async function generateWithRetry(model, prompt, partName, maxRetries = 2) {
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
+// Proxy de imágenes de Wikimedia (upload.wikimedia.org da 403 al navegador)
+app.use('/api/image', imageProxy);
+
 // 🔥 ENDPOINT OPTIMIZADO: Sin IA, solo POIs de Wikipedia
 app.post('/api/generate-trip-fast', async (req, res) => {
   console.log('\n[FAST] ========== WIKIPEDIA-ONLY GENERATION ==========');
@@ -291,6 +326,34 @@ app.post('/api/generate-trip-fast', async (req, res) => {
       console.log('[FAST] ✓ Cache hit!');
       console.timeEnd('total_request');
       return res.json({ ok: true, data: cached.data, cached: true });
+    }
+
+    // Check disk cache (sobrevive reinicios): mismo destino+fechas+metodo
+    const diskKey = crypto
+      .createHash('sha1')
+      .update(
+        JSON.stringify({
+          d: destination,
+          s: startDate,
+          e: endDate,
+          i: intensity,
+          m: preferences.searchMethod || 'original',
+        })
+      )
+      .digest('hex');
+    const diskPath = path.join(__dirname, '.trip-cache', `${diskKey}.json`);
+    try {
+      const stat = await fs.promises.stat(diskPath);
+      if (Date.now() - stat.mtimeMs < CACHE_TTL) {
+        const diskData = JSON.parse(
+          await fs.promises.readFile(diskPath, 'utf8')
+        );
+        console.log('[FAST] ✓ DISK cache hit!');
+        console.timeEnd('total_request');
+        return res.json({ ok: true, data: diskData, cached: true });
+      }
+    } catch {
+      // sin cache en disco
     }
 
     // Calcular días
@@ -572,7 +635,7 @@ app.post('/api/generate-trip-fast', async (req, res) => {
           },
           images:
             poi.wikipediaImages && poi.wikipediaImages.length > 0
-              ? poi.wikipediaImages
+              ? poi.wikipediaImages.map(proxyImageUrl)
               : ['https://placehold.co/600x400'],
           tips: generateSpanishTips(poi),
           travelTime: travelTime,
@@ -684,6 +747,18 @@ app.post('/api/generate-trip-fast', async (req, res) => {
       timestamp: Date.now(),
     });
 
+    // Persistir en disco para regeneraciones instantáneas tras reinicio
+    try {
+      await fs.promises.mkdir(path.dirname(diskPath), { recursive: true });
+      await fs.promises.writeFile(
+        diskPath,
+        JSON.stringify(tripData),
+        'utf8'
+      );
+    } catch (e) {
+      console.warn('[FAST] disk cache write failed:', e.message);
+    }
+
     console.timeEnd('total_request');
     console.log('[FAST] ========== SUCCESS ==========\n');
 
@@ -691,6 +766,14 @@ app.post('/api/generate-trip-fast', async (req, res) => {
   } catch (error) {
     console.error('[FAST] ✗ Error:', error.message);
     console.timeEnd('total_request');
+
+    // Fallback local: servir un viaje de demostración en vez de un 500,
+    // para que la web nunca muestre días vacíos
+    const localTrip = buildLocalFallbackTrip((req.body || {}).preferences);
+    if (localTrip) {
+      console.warn('[FAST] ⚠ Serving LOCAL FALLBACK trip');
+      return res.json({ ok: true, data: localTrip, cached: false, fallback: true });
+    }
     return res.status(500).json({ ok: false, error: error.message });
   }
 });
@@ -716,11 +799,11 @@ Calculate duration from ${startDate} to ${endDate}. ALL text in Spanish.`,
 Adjust prices: low=30-60€, medium=80-150€, high=180-300€, luxury=350€+. Include breakfast for medium+. ALL text in Spanish except property names.`,
 
     dayEvents: (destination, dayNum, date, intensity) =>
-      `Generate 3-4 events for Day ${dayNum} in ${destination} (${date}).
+      `Generate 4 events for Day ${dayNum} in ${destination} (${date}).
 Intensity: ${intensity}. Return ONLY JSON array, no markdown:
-[{"id":"evt-1","time":"09:00","duration":"2h","title":"Monument name","description":"Description in Spanish","type":"Monument","location":{"name":"Name","address":"Address","coordinates":{"lat":40.4168,"lng":-3.7038}},"price":{"amount":15,"currency":"EUR"},"images":["https://placehold.co/600x400"],"tips":["Tip 1","Tip 2","Tip 3"],"travelTime":"10 min"}]
+[{"id":"evt-1","time":"09:00","duration":"2h","title":"Place name","description":"Short Spanish description (max 20 words)","type":"museum","location":{"name":"Name","address":"Address","coordinates":{"lat":40.4168,"lng":-3.7038}},"price":{"amount":15,"currency":"EUR"},"images":["https://placehold.co/600x400"],"tips":["One tip"],"travelTime":"10 min"}]
 
-ALL text in Spanish. Real coordinates. 3 tips per event.`,
+ALL text in Spanish. Real coordinates. Keep descriptions and tips SHORT.`,
   };
 
   try {
@@ -770,7 +853,7 @@ ALL text in Spanish. Real coordinates. 3 tips per event.`,
       `[PROGRESSIVE] Trip duration: ${days} days from ${startFormatted} to ${endFormatted}`
     );
 
-    const fastModel = getModel(0.3, 400);
+    const fastModel = getModel(0.3, 4096);
 
     // Send progress updates
     const sendUpdate = (type, data, progress) => {
@@ -858,10 +941,12 @@ ALL text in Spanish. Real coordinates. 3 tips per event.`,
           events: events.map((e) => ({
             ...e,
             description: e.description || `Visita a ${e.title}`,
+            // source.unsplash.com está deprecado y devuelve 503:
+            // usar placehold.co como placeholder estable
             images: e.images || [
-              `https://source.unsplash.com/800x600/?${destination},${
-                e.type || 'travel'
-              }`,
+              `https://placehold.co/800x600/1a2980/ffffff?text=${encodeURIComponent(
+                e.title || destination
+              )}`,
             ],
             location: {
               name: e.location?.name || e.title,
@@ -893,6 +978,25 @@ ALL text in Spanish. Real coordinates. 3 tips per event.`,
 
     // Final assembly
     console.log('[PROGRESSIVE] Assembling final data...');
+
+    // Detectar viaje vacío (IA caída / quota agotada): usar fallback local
+    const totalEvents = Object.values(itinerary).reduce(
+      (sum, day) => sum + (Array.isArray(day?.events) ? day.events.length : 0),
+      0
+    );
+
+    if (totalEvents === 0) {
+      console.warn(
+        '[PROGRESSIVE] ⚠ AI returned 0 events, serving LOCAL FALLBACK trip'
+      );
+      const localTrip = buildLocalFallbackTrip(preferences);
+      if (localTrip) {
+        sendUpdate('complete', localTrip, 100);
+        res.write('data: [DONE]\n\n');
+        return res.end();
+      }
+    }
+
     const tripData = {
       tripId: `trip-${destination
         .toLowerCase()

@@ -179,22 +179,31 @@ export function calculateTotalCost(tripData, hotelNights = 3) {
   let activitiesCost = 0;
   let mealsCost = 0;
 
+  const hotels = Array.isArray(tripData.hotels) ? tripData.hotels : [];
+  const itinerary = tripData.itinerary || {};
+
   // Costo promedio de hoteles
-  if (tripData.hotels.length > 0) {
-    const avgHotelPrice =
-      tripData.hotels.reduce((sum, hotel) => sum + hotel.price.amount, 0) /
-      tripData.hotels.length;
-    hotelCost = avgHotelPrice * hotelNights;
+  if (hotels.length > 0) {
+    const prices = hotels
+      .map((h) => h?.price?.amount)
+      .filter((p) => typeof p === 'number' && !isNaN(p));
+    if (prices.length > 0) {
+      const avgHotelPrice =
+        prices.reduce((sum, p) => sum + p, 0) / prices.length;
+      hotelCost = avgHotelPrice * hotelNights;
+    }
   }
 
   // Costo de eventos
-  Object.values(tripData.itinerary).forEach((day) => {
-    day.events.forEach((event) => {
-      if (event.price) {
+  Object.values(itinerary).forEach((day) => {
+    const events = Array.isArray(day?.events) ? day.events : [];
+    events.forEach((event) => {
+      const amount = event?.price?.amount;
+      if (typeof amount === 'number' && !isNaN(amount)) {
         if (event.type === 'restaurant') {
-          mealsCost += event.price.amount;
+          mealsCost += amount;
         } else {
-          activitiesCost += event.price.amount;
+          activitiesCost += amount;
         }
       }
     });
