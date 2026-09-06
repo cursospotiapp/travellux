@@ -52,8 +52,8 @@ Hoteles recomendados según el presupuesto que marcaste, con su zona, servicios 
 ## Ponerlo en marcha (5 minutos)
 
 ```bash
-git clone https://github.com/cursospotiapp/PLANNER-TRIP.git
-cd PLANNER-TRIP
+git clone https://github.com/cursospotiapp/travellux.git
+cd travellux
 npm install
 ```
 
@@ -91,6 +91,6 @@ React 19 + Rsbuild, Node.js + Express, OpenStreetMap Overpass API, Wikipedia/Wik
 
 ## Notas de uso
 
-- La búsqueda de lugares usa servicios públicos gratuitos (Overpass y Wikipedia) que a veces están saturados; en ese caso la app muestra un itinerario de demostración y se recuperan los datos reales al reintertar.
+- La búsqueda de lugares usa servicios públicos gratuitos (Overpass y Wikipedia) que a veces están saturados; en ese caso la app muestra un itinerario de demostración y se recuperan los datos reales al reintentar.
 - El tier gratuito de Gemini limita el número de peticiones al día; el modo progresivo con IA es opcional y el resto de la app no lo necesita.
 - La primera generación de un destino tarda entre 20 y 60 segundos; las siguientes para el mismo destino son instantáneas gracias a la caché en disco.
